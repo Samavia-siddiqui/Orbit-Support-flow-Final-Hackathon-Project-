@@ -1,119 +1,101 @@
-Orbit--SupportFlow
+**Orbit__SupportFlow**
 
-A focused customer support ticketing desk built for the "AI Factory 2.0" hackathon (Task D). Customers submit tickets, agents triage and resolve them, and status/message updates appear in real time.
+Customer support ticketing desk — customers raise tickets, agents triage and resolve them, updates appear live. Built for AI Factory 2.0 Hackathon (Task D).
 
-Live Demo
+🔗 Live Links
 Frontend: https://orbit-support-flow-final-hackathon.vercel.app
-Backend API: https://orbit-support-flow-final-hackathon.onrender.com/api
+Backend: https://orbit-support-flow-final-hackathon.onrender.com/api
 
-Note: the backend is hosted on Render's free tier — the first request after a period of inactivity may take 30-60 seconds to wake up.
+(Backend is on Render's free tier — first load may take ~30-60s to wake up.)
 
-Demo Credentials
-Role	           Email  	     Password
-Support   (Agent	agent@orbit.com)  	(agent123)
-Customer	Create your own via the Sign Up page with any email	—
+🔑 Demo Credentials
+Agent: agent@orbit.com / agent123
+Customer: Sign up with any other email
+🛠 Tech Stack
+React.js (JS) + Tailwind + Framer Motion
+Node.js + Express.js
+MongoDB + Mongoose
+Socket.IO (real-time)
+Cloudinary (profile images)
+JWT + bcrypt (auth)
+✅ Features
+Email/password auth, role auto-assigned by email (Customer / Agent)
+Ticket creation with auto-generated ticket number (TCK-YYYYMMDD-XXXX)
+Status flow: New → Assigned → In Progress → Resolved (+ Reopen)
+Manual agent triage: category, priority, summary set before "In Progress"
+Live conversation thread per ticket
+Real-time status/message updates (Socket.IO, no refresh needed)
+Agent dashboard with live stats (Total / Unassigned / In Progress / Resolved)
+Profile page with avatar upload (Cloudinary)
+Resolution note required to mark a ticket Resolved
+Responsive UI with loading / empty / error states
+🔒 Business Rules
+Customers see only their own tickets
+Agents update only tickets assigned to them
+No Resolve without a resolution note
+Resolved tickets are locked — only Reopen unlocks them
+Category/priority validated against fixed enums server-side
+📁 Structure
+/Frontend/src   → pages, components, context, api, hooks, utils
+/Backend        → models, routes, controllers, middleware, config, server.js
+▶ Run Locally
 
-Agent access is granted automatically at signup to any email listed in the backend's AGENT_EMAILS environment variable. Any other email that signs up is created as a Customer.
-
-Tech Stack
-Frontend: React.js (JavaScript), Tailwind CSS, Framer Motion
-Backend: Node.js, Express.js
-Database: MongoDB with Mongoose
-Real-time: Socket.IO
-File uploads: Cloudinary (via multer + multer-storage-cloudinary)
-Auth: Email/password with bcrypt password hashing and JWT sessions
-Core Features
-Email + password authentication with role-based access (Customer / Agent), role assigned automatically by email at signup
-Customer ticket creation (subject, description, optional category) with an auto-generated unique ticket number (TCK-YYYYMMDD-XXXX)
-Ticket status workflow: New → Assigned → In Progress → Resolved, with a Reopen action for resolved tickets
-Manual agent triage: agents set/confirm category, priority, and a short summary before a ticket can move to "In Progress"
-Persistent conversation thread per ticket between customer and assigned agent
-Real-time updates via Socket.IO: status changes and new messages appear without a manual refresh
-Agent dashboard with live ticket counts (Total, Unassigned, In Progress, Resolved) pulled from the database
-Profile page (shared component for both roles) with Cloudinary-backed avatar upload
-Resolution notes required before a ticket can be marked Resolved
-Responsive UI with loading, empty, and error states throughout
-Business Rules Enforced (server-side)
-Customers can only view/access their own tickets
-Agents can only update tickets assigned to them
-A ticket cannot be set to Resolved without a resolution note
-A Resolved ticket cannot be modified through the normal workflow — only the Reopen action can move it back to In Progress
-Category and priority values are validated against fixed enums before being saved
-Project Structure
-/Frontend
-  /src
-    /pages        → route-level views (Login/Signup, Dashboard, Ticket Detail, etc.)
-    /components   → reusable UI components
-    /context      → AuthContext (user/session state)
-    /api          → central axios instance (src/api/axios.js)
-    /hooks        → shared hooks
-    /utils        → helper functions
-
-/Backend
-  /models         → Mongoose schemas (User, Ticket)
-  /routes         → Express route definitions
-  /controllers    → request handlers / business logic
-  /middleware     → auth middleware, multer upload middleware
-  /config         → db.js (MongoDB connection), cloudinary.js
-  server.js       → app entry point, CORS + Socket.IO setup
-Running Locally
 Backend
+
 bash
 cd Backend
 npm install
-
-Create a .env file in /Backend with:
-
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-FRONTEND_URL=http://localhost:5173
-AGENT_EMAILS=agent@orbit.com
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-bash
 npm start
 
-Server runs on http://localhost:5000, connecting to MongoDB automatically.
+.env needed: PORT, MONGO_URI, JWT_SECRET, FRONTEND_URL, AGENT_EMAILS, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 
 Frontend
+
 bash
 cd Frontend
 npm install
-
-Create a .env file in /Frontend with:
-
-VITE_API_URL=http://localhost:5000/api
-bash
 npm run dev
 
-App runs on http://localhost:5173 (Vite default).
+.env needed: VITE_API_URL=http://localhost:5000/api
 
-API Overview
+📡 API Endpoints
 Method	Endpoint	Description
-POST	/api/auth/register	Create account (role auto-assigned by email)
-POST	/api/auth/login	Log in, returns JWT + user info
-GET	/api/tickets/mine	Customer's own tickets
-GET	/api/tickets/unassigned	Unassigned ticket pool (agent)
-GET	/api/tickets/assigned	Tickets assigned to the logged-in agent
-GET	/api/tickets/:id	Single ticket detail
-POST	/api/tickets	Create a new ticket (customer)
-PATCH	/api/tickets/:id/assign	Agent claims an unassigned ticket
-PATCH	/api/tickets/:id/classify	Agent sets category/priority/summary
-PATCH	/api/tickets/:id/status	Update ticket status
-PATCH	/api/tickets/:id/reopen	Reopen a resolved ticket
-POST	/api/tickets/:id/messages	Add a message to the conversation
-GET	/api/tickets/stats	Dashboard statistics (agent)
-POST	/api/users/profile-image	Upload/update profile picture
+POST	/api/auth/register	Sign up (role auto-assigned)
+POST	/api/auth/login	Log in
+GET	/api/tickets/mine	Customer's tickets
+GET	/api/tickets/unassigned	Unassigned pool (agent)
+GET	/api/tickets/assigned	Agent's assigned tickets
+GET	/api/tickets/:id	Ticket detail
+POST	/api/tickets	Create ticket
+PATCH	/api/tickets/:id/assign	Claim a ticket
+PATCH	/api/tickets/:id/classify	Set category/priority/summary
+PATCH	/api/tickets/:id/status	Update status
+PATCH	/api/tickets/:id/reopen	Reopen resolved ticket
+POST	/api/tickets/:id/messages	Send message
+GET	/api/tickets/stats	Dashboard stats
+POST	/api/users/profile-image	Upload avatar
+⚙️ Deployment
 
-(A full Postman collection can be exported from the routes above if required for submission.)
+Frontend → Vercel · Backend → Render · Database → MongoDB Atlas (free tier)
 
-Deployment
-Frontend: Vercel (auto-deploys from the main branch)
-Backend: Render (auto-deploys from the main branch)
-Database: MongoDB Atlas (free tier)
-Known Simplifications (given hackathon time constraints)
-No admin role — the agent dashboard already covers ticket visibility and basic stats, which met the MVP requirement without adding a separate role
-No automatic ticket assignment — agents pick up tickets from a shared unassigned pool ("Assign to me")
-Agent accounts are provisioned via an email allowlist (AGENT_EMAILS) rather than an admin invite flow
+📝 Notes / Simplifications
+No separate Admin role — Agent dashboard covers visibility + stats
+No auto-assignment — agents self-pick from an unassigned pool
+Agent accounts provisioned via email allowlist (AGENT_EMAILS), not an invite system
+Content
+
+HACKATHON TASK - D MODERN WEB & APP DEVELOPMENT - ADVANCE AI FACTORY 2.0 SUPPORTFLOW Challenge: Build a focused AI-assisted customer support desk for managing support tickets. Core idea: Customer submits ticket → AI triages → Agent receives → Agent responds → Resolve 1. Problem Statement Supp
+
+PASTED
+
+import React, { useState, useEffect } from "react"; import { motion } from "framer-motion"; import { Orbit, Eye, EyeOff, Mail, Lock, User } from "lucide-react"; import "./signup or login.css"; import { useAuth } from "./context/AuthContext"; import api from "./api/axios"; import Swal from 'swe
+
+PASTED
+
+el CLI 59.10.0 (Node.js 24.14.0) Directory ~\OneDrive\Desktop\SupportFlow\Frontend Team samavia-siddiquis-projects ? Which project? Search all projects ? Which project? (27 projects) ❯ orbit-support-flow-final-hackathon-project project-showcaser-app samavia-siddi
+
+PASTED
+
+Orbit--SupportFlow A focused customer support ticketing desk built for the "AI Factory 2.0" hackathon (Task D). Customers submit tickets, agents triage and resolve them, and status/message updates appear in real time. Live Demo Frontend: https://orbit-support-flow-final-hackathon.vercel.app
+
+PASTED
