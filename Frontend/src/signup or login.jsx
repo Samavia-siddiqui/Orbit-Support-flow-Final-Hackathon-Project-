@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Orbit, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import "./signup or login.css";
+import { useAuth } from "./context/AuthContext";
+import api from "./api/axios";
+import Swal from 'sweetalert2';
 
 export default function SignupOrLogin() {
   const [mode, setMode] = useState("login"); // 'login' | 'signup'
@@ -12,6 +15,10 @@ export default function SignupOrLogin() {
   // Password visibility states
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+
+  const { login } = useAuth();
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // Form input states
   const [loginEmail, setLoginEmail] = useState("");
@@ -25,6 +32,7 @@ export default function SignupOrLogin() {
   // Transition state machine
   const triggerTransition = (targetMode) => {
     if (busy || mode === targetMode) return;
+    setError(""); // Clear error message when switching modes
     setBusy(true);
     setDir(targetMode === "signup" ? 1 : -1);
     setPhase("start");
@@ -72,12 +80,63 @@ export default function SignupOrLogin() {
     }),
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (mode === "login") {
-      console.log("Logging in with:", { loginEmail, loginPassword, loginRemember });
-    } else {
-      console.log("Signing up with:", { signupName, signupEmail, signupPassword });
+    setError("");
+    setSubmitting(true);
+    try {
+      if (mode === "login") {
+        const res = await api.post("/auth/login", {
+          email: loginEmail.trim(),
+          password: loginPassword,
+        });
+
+        // Trigger welcome success popup
+        Swal.fire({
+          title: 'Welcome Back!',
+          text: `Successfully logged in as ${res.data.name}.`,
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false,
+          timerProgressBar: true,
+          confirmButtonColor: '#0c5256'
+        });
+
+        login(res.data, res.data.token);
+      } else {
+        const res = await api.post("/auth/register", {
+          name: signupName.trim(),
+          email: signupEmail.trim(),
+          password: signupPassword,
+        });
+
+        // Trigger account creation success popup
+        Swal.fire({
+          title: 'Welcome to Orbit!',
+          text: `Your account has been created, ${res.data.name}!`,
+          icon: 'success',
+          timer: 1800,
+          showConfirmButton: false,
+          timerProgressBar: true,
+          confirmButtonColor: '#0c5256'
+        });
+
+        login(res.data, res.data.token);
+      }
+    } catch (err) {
+      console.error("Authentication error:", err);
+      const errMsg = err.response?.data?.message || `Failed to ${mode === "login" ? "login" : "sign up"}. Please try again.`;
+      setError(errMsg);
+      
+      // Trigger error popup
+      Swal.fire({
+        title: 'Authentication Failed',
+        text: errMsg,
+        icon: 'error',
+        confirmButtonColor: '#0c5256'
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -109,6 +168,11 @@ export default function SignupOrLogin() {
               <form onSubmit={handleFormSubmit} className="form-panel-content">
                 <div className="form-header">
                   <h2 className="form-title tracking-tight">Sign in</h2>
+                  {error && (
+                    <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '0.8rem', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', marginTop: '0.5rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                      {error}
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-fields-container">
@@ -257,6 +321,11 @@ export default function SignupOrLogin() {
               <form onSubmit={handleFormSubmit} className="form-panel-content">
                 <div className="form-header">
                   <h2 className="form-title tracking-tight">Create account</h2>
+                  {error && (
+                    <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '0.8rem', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', marginTop: '0.5rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                      {error}
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-fields-container">

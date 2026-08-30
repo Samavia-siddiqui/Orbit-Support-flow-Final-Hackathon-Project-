@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import cloudinary from '../config/cloudinary.js';
+
 
 // Helper function to generate token
 const generateToken = (id) => {
@@ -12,7 +14,7 @@ const generateToken = (id) => {
 // Register User
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Please include name, email, and password' });
@@ -29,16 +31,23 @@ export const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create user
+    const isAgent = email.toLowerCase() === (process.env.AGENT_EMAIL || 'agent@orbit.com').toLowerCase();
+    const userRole = isAgent ? 'agent' : (role || 'user');
+
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
+      role: userRole,
     });
 
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
+      role: user.role,
+      profileImageUrl: user.profileImageUrl,
+      profileImagePublicId: user.profileImagePublicId,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -64,6 +73,9 @@ export const loginUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
+        profileImageUrl: user.profileImageUrl,
+        profileImagePublicId: user.profileImagePublicId,
         token: generateToken(user._id),
       });
     } else {
@@ -73,3 +85,42 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const updateProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please upload an image file' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Delete old profile image from Cloudinary if it exists
+    if (user.profileImagePublicId) {
+      try {
+        await cloudinary.uploader.destroy(user.profileImagePublicId);
+      } catch (cloudinaryError) {
+        console.error('Failed to delete old image from Cloudinary:', cloudinaryError.message);
+      }
+    }
+
+    user.profileImageUrl = req.file.path;
+    user.profileImagePublicId = req.file.filename;
+    await user.save();
+
+    res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profileImageUrl: user.profileImageUrl,
+      profileImagePublicId: user.profileImagePublicId,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+

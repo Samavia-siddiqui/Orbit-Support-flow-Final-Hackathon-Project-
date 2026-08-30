@@ -15,6 +15,7 @@
 
 /* Page wrapper to hold the component */
 .auth-page-wrapper {
+  font-family: var(--font-inter), sans-serif;
   background-color: var(--color-page-bg);
   min-height: 100vh;
   display: flex;
@@ -127,6 +128,7 @@
 }
 
 .brand-heading {
+  font-family: var(--font-sora), sans-serif;
   font-size: 2.25rem;
   font-weight: 700;
   line-height: 1.2;
@@ -157,6 +159,7 @@
 }
 
 .form-title {
+  font-family: var(--font-sora), sans-serif;
   font-size: 2rem;
   font-weight: 700;
   color: var(--color-cream-text);

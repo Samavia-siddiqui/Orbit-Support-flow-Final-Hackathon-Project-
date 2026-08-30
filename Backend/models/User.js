@@ -17,6 +17,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    role: {
+      type: String,
+      enum: ['user', 'agent'],
+      default: 'user',
+    },
+    profileImageUrl: {
+      type: String,
+      default: 'https://res.cloudinary.com/demo/image/upload/d_avatar.png/avatar.png',
+    },
+    profileImagePublicId: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,

@@ -1,1 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap');
 @import "tailwindcss";
+
+@theme {
+  /* System Colors from DESIGN.md */
+  --color-surface: #effcfd;
+  --color-surface-dim: #cfdddd;
+  --color-surface-bright: #effcfd;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #e9f6f7;
+  --color-surface-container: #e3f0f1;
+  --color-surface-container-high: #ddebec;
+  --color-surface-container-highest: #d8e5e6;
+  --color-on-surface: #121e1f;
+  --color-on-surface-variant: #3f4849;
+  --color-inverse-surface: #263334;
+  --color-inverse-on-surface: #e6f3f4;
+  --color-outline: #707979;
+  --color-outline-variant: #bfc8c9;
+  --color-surface-tint: #2a676b;
+  
+  --color-primary: #0c5256;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #2d6a6e;
+  --color-on-primary-container: #abe8ec;
+  --color-inverse-primary: #95d1d5;
+  
+  --color-secondary: #904d03;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #ffa85c;
+  --color-on-secondary-container: #743d00;
+  
+  --color-tertiary: #494947;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #61615e;
+  --color-on-tertiary-container: #dedcd8;
+  
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  
+  --color-background: #effcfd;
+  --color-on-background: #121e1f;
+  --color-surface-variant: #d8e5e6;
+  
+  /* Brand specific colors mentioned in prose */
+  --color-warm-ivory: #f7f5f1;
+  --color-pure-white: #ffffff;
+  
+  /* Typography Families */
+  --font-sora: 'Sora', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+  
+  /* Rounded Corners overrides */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+  
+  /* Spacing Grid overrides */
+  --spacing-sidebar-width: 260px;
+  --spacing-container-padding: 2rem;
+  --spacing-gutter: 1.5rem;
+  --spacing-stack-sm: 0.5rem;
+  --spacing-stack-md: 1rem;
+  --spacing-stack-lg: 2rem;
+  
+  /* Ambient soft shadow */
+  --shadow-ambient: 0px 4px 12px rgba(30, 42, 43, 0.05);
+}
+
+/* Background Animated Blobs styles */
+.bg-blobs-container {
+  position: relative;
+  background-color: var(--color-warm-ivory);
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.07;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.blob-teal {
+  width: 450px;
+  height: 450px;
+  background-color: var(--color-primary);
+  top: -10%;
+  left: -5%;
+  animation: float-slow 28s ease-in-out infinite;
+}
+
+.blob-terracotta {
+  width: 550px;
+  height: 550px;
+  background-color: var(--color-secondary);
+  bottom: -10%;
+  right: -5%;
+  animation: float-slow-reverse 32s ease-in-out infinite alternate;
+}
+
+.blob-cream {
+  width: 350px;
+  height: 350px;
+  background-color: var(--color-primary-container);
+  top: 40%;
+  left: 45%;
+  animation: float-slow-drift 30s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(40px, -60px) scale(1.1);
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.95);
+  }
+}
+
+@keyframes float-slow-reverse {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-50px, 50px) scale(1.15);
+  }
+}
+
+@keyframes float-slow-drift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(60px, -40px) scale(0.9);
+  }
+}

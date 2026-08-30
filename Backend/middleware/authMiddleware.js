@@ -28,3 +28,21 @@ export const protect = async (req, res, next) => {
     return res.status(401).json({ message: 'Not authorized, no token' });
   }
 };
+
+export const agentOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'agent') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Not authorized as an agent' });
+  }
+};
+
+export const userOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'user') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Not authorized as a user' });
+  }
+};
+
+
