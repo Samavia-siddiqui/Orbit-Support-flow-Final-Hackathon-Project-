@@ -17,6 +17,21 @@ export const createTicket = async (req, res) => {
       createdBy: req.user._id,
     });
 
+    const io = req.app.get('io');
+    if (io) {
+      io.to('agents').emit('newTicket', {
+        ticketId: ticket._id,
+        ticketTitle: ticket.title,
+        createdBy: {
+          _id: req.user._id,
+          name: req.user.name,
+        },
+        category: ticket.category,
+        priority: ticket.priority,
+        createdAt: ticket.createdAt,
+      });
+    }
+
     res.status(201).json(ticket);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -124,14 +139,19 @@ export const addReply = async (req, res) => {
         // Agent replied -> notify user (createdBy)
         io.to(updatedTicket.createdBy._id.toString()).emit('newReply', payload);
       } else {
-        // User replied -> notify assigned agent (if assigned)
+        // User replied -> notify assigned agent (if assigned) or broadcast to all agents!
         if (updatedTicket.assignedTo) {
           io.to(updatedTicket.assignedTo._id.toString()).emit('newReply', payload);
+        } else {
+          io.to('agents').emit('newReply', payload);
         }
       }
     }
 
-    res.status(201).json(updatedTicket);
+    res.status(201).json({
+      ...updatedTicket.toObject(),
+      reply: addedReply,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

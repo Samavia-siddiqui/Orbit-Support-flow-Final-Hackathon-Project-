@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import Swal from 'sweetalert2';
 import { 
   LayoutDashboard, 
@@ -14,11 +15,13 @@ import {
   CheckCircle, 
   Loader2, 
   HelpCircle,
-  ToggleLeft
+  ToggleLeft,
+  Bell
 } from 'lucide-react';
 
 export default function AgentDashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, notifications, clearNotification } = useAuth();
+  const socket = useSocket();
   const navigate = useNavigate();
 
   const [tickets, setTickets] = useState([]);
@@ -38,11 +41,62 @@ export default function AgentDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     fetchTickets();
     fetchCategories();
   }, []);
+
+  // Close notifications dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Background silent fetch for real-time ticket updates
+  const fetchTicketsSilent = async () => {
+    try {
+      const res = await api.get('/tickets');
+      setTickets(res.data);
+    } catch (err) {
+      console.error('Error auto-refreshing tickets:', err);
+    }
+  };
+
+  // Real-time socket updates for new replies and tickets
+  useEffect(() => {
+    if (!socket) return;
+    const handleLiveTicketUpdate = () => {
+      fetchTicketsSilent();
+    };
+
+    socket.on('newReply', handleLiveTicketUpdate);
+    socket.on('newTicket', handleLiveTicketUpdate);
+
+    return () => {
+      socket.off('newReply', handleLiveTicketUpdate);
+      socket.off('newTicket', handleLiveTicketUpdate);
+    };
+  }, [socket]);
+
+  const handleNotificationClick = (ticketId) => {
+    clearNotification(ticketId);
+    setShowNotifications(false);
+    navigate(`/tickets/${ticketId}`);
+  };
+
+  const handleClearAllNotifications = (e) => {
+    e.stopPropagation();
+    const uniqueTicketIds = [...new Set(notifications.map((n) => n.ticketId))];
+    uniqueTicketIds.forEach((id) => clearNotification(id));
+  };
 
   const fetchTickets = async () => {
     try {
@@ -286,15 +340,89 @@ export default function AgentDashboard() {
             <p className="font-body-md text-on-surface-variant mt-1">Overview of support request queues and live category states.</p>
           </div>
           
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" size={18} />
-            <input
-              type="text"
-              placeholder="Search by title/user..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-full text-body-md outline-none focus:border-primary w-full shadow-ambient"
-            />
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" size={18} />
+              <input
+                type="text"
+                placeholder="Search by title/user..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-full text-body-md outline-none focus:border-primary w-full shadow-ambient"
+              />
+            </div>
+
+            {/* Notification Bell Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2.5 bg-surface-container-lowest border border-outline-variant/60 rounded-full text-on-surface-variant hover:text-primary hover:border-primary/40 transition-colors shadow-ambient cursor-pointer flex items-center justify-center"
+                title="Notifications"
+                aria-label="Notifications"
+              >
+                <Bell size={19} />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-secondary text-on-secondary text-[11px] font-bold min-w-[20px] h-5 rounded-full flex items-center justify-center px-1 animate-pulse shadow-sm">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown panel */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-3 w-80 bg-surface-container-lowest rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.12)] border border-outline-variant/30 z-50 overflow-hidden">
+                  <div className="px-4 py-3 bg-warm-ivory border-b border-outline-variant/20 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-primary">Live Alerts</span>
+                      {notifications.length > 0 && (
+                        <span className="text-[10px] bg-secondary/15 text-secondary px-2 py-0.5 rounded-full font-bold">
+                          {notifications.length} new
+                        </span>
+                      )}
+                    </div>
+                    {notifications.length > 0 && (
+                      <button 
+                        onClick={handleClearAllNotifications}
+                        className="text-[11px] text-secondary hover:underline font-bold cursor-pointer"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="max-h-80 overflow-y-auto divide-y divide-outline-variant/10">
+                    {notifications.length > 0 ? (
+                      notifications.map((n) => (
+                        <div
+                          key={n.replyId}
+                          onClick={() => handleNotificationClick(n.ticketId)}
+                          className="px-4 py-3 hover:bg-warm-ivory/60 transition-colors cursor-pointer text-left group"
+                        >
+                          <div className="flex justify-between items-start mb-1 gap-2">
+                            <span className="text-xs font-bold text-primary group-hover:text-secondary transition-colors truncate">
+                              {n.ticketTitle || `Ticket #${n.ticketId?.slice(-6)}`}
+                            </span>
+                            <span className="text-[10px] text-on-surface-variant opacity-75 shrink-0">
+                              {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-[11px] font-semibold text-secondary mb-0.5">
+                            {n.sentBy?.name || 'Customer'}:
+                          </p>
+                          <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+                            {n.message}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-8 text-center text-xs text-on-surface-variant opacity-70 font-medium">
+                        No new notifications
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

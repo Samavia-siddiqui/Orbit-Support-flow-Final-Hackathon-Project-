@@ -33,11 +33,11 @@ export default function TicketDetails() {
     if (!socket || !id) return;
 
     const handleNewReplyEvent = (data) => {
-      // Check if the reply belongs to the current ticket
-      if (data.ticketId === id) {
+      // Check if the reply belongs to the current ticket and data is valid
+      if (data && data.reply && data.ticketId === id) {
         setReplies((prev) => {
           // Double check to prevent duplicate messages
-          const exists = prev.some((r) => r._id === data.reply._id);
+          const exists = prev.some((r) => r && r._id === data.reply._id);
           if (exists) return prev;
           return [...prev, data.reply];
         });
@@ -80,8 +80,14 @@ export default function TicketDetails() {
       const res = await api.post(`/tickets/${id}/reply`, {
         message: newReply.trim(),
       });
-      // Append the reply locally
-      setReplies((prev) => [...prev, res.data.reply]);
+
+      // Synchronize replies list safely
+      if (res.data && res.data.replies && Array.isArray(res.data.replies)) {
+        setReplies(res.data.replies);
+        setTicket((prev) => (prev ? { ...prev, replies: res.data.replies } : prev));
+      } else if (res.data && res.data.reply) {
+        setReplies((prev) => [...prev, res.data.reply]);
+      }
       setNewReply('');
     } catch (err) {
       console.error('Error posting reply:', err);
@@ -264,7 +270,7 @@ export default function TicketDetails() {
             </div>
 
             {/* Thread Replies */}
-            {replies.map((reply) => {
+            {replies.filter(Boolean).map((reply) => {
               // Determine if the reply was sent by the logged-in user
               const isSelf = reply.sentBy && (reply.sentBy._id === user._id || reply.sentBy === user._id);
 

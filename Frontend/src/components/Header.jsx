@@ -81,39 +81,41 @@ export default function Header() {
         {user && (
           <div className="hidden md:flex items-center gap-8 h-full">
             {user.role === 'user' ? (
-              <>
+              <div className="bg-surface-container/70 p-1 rounded-full border border-outline-variant/30 flex items-center gap-1 shadow-inner">
                 <Link
-                  className={`h-full flex items-center transition-colors pb-1 border-b-2 ${
+                  className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                     location.pathname === '/dashboard'
-                      ? 'text-primary border-secondary font-bold'
-                      : 'text-on-surface-variant border-transparent hover:text-primary'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-on-surface-variant hover:text-primary hover:bg-white/70'
                   }`}
                   to="/dashboard"
                 >
                   My Tickets
                 </Link>
                 <Link
-                  className={`h-full flex items-center transition-colors pb-1 border-b-2 ${
+                  className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                     location.pathname === '/create-ticket'
-                      ? 'text-primary border-secondary font-bold'
-                      : 'text-on-surface-variant border-transparent hover:text-primary'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-on-surface-variant hover:text-primary hover:bg-white/70'
                   }`}
                   to="/create-ticket"
                 >
                   New Ticket
                 </Link>
-              </>
+              </div>
             ) : (
-              <Link
-                className={`h-full flex items-center transition-colors pb-1 border-b-2 ${
-                  location.pathname === '/agent/dashboard'
-                    ? 'text-primary border-secondary font-bold'
-                    : 'text-on-surface-variant border-transparent hover:text-primary'
-                }`}
-                to="/agent/dashboard"
-              >
-                Agent Dashboard
-              </Link>
+              <div className="bg-surface-container/70 p-1 rounded-full border border-outline-variant/30 flex items-center shadow-inner">
+                <Link
+                  className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                    location.pathname === '/agent/dashboard'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-on-surface-variant hover:text-primary hover:bg-white/70'
+                  }`}
+                  to="/agent/dashboard"
+                >
+                  Agent Dashboard
+                </Link>
+              </div>
             )}
           </div>
         )}

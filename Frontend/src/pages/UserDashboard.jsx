@@ -82,16 +82,24 @@ export default function UserDashboard() {
       <main className="flex-grow max-w-[1200px] mx-auto w-full px-container-padding py-stack-lg flex flex-col gap-stack-lg relative z-10">
         
         {/* Header Section */}
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <header className="bg-white/85 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-outline-variant/20 shadow-ambient flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div>
-            <h1 className="font-h1 text-h1 text-on-surface">My Tickets</h1>
-            <p className="font-body-md text-on-surface-variant mt-2">Manage and track your support requests.</p>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="px-3 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+                Support Portal
+              </span>
+              <span className="text-xs text-on-surface-variant font-medium">
+                • {tickets.length} {tickets.length === 1 ? 'ticket' : 'tickets'} total
+              </span>
+            </div>
+            <h1 className="font-h1 text-h2 sm:text-h1 text-on-surface font-bold">My Tickets</h1>
+            <p className="font-body-md text-on-surface-variant mt-1">Manage, search, and track all your support requests in real time.</p>
           </div>
           
-          {/* Filters/Search */}
-          <div className="flex gap-2 w-full sm:w-auto">
-            <div className="relative flex-grow bg-surface-container-lowest border border-outline-variant rounded-full px-4 py-2 flex items-center focus-within:border-primary transition-all">
-              <Search size={18} className="text-outline mr-2" />
+          {/* Actions: Search & New Ticket CTA */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-grow bg-white border border-outline-variant/40 rounded-full px-4 py-2.5 flex items-center focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 shadow-sm transition-all">
+              <Search size={18} className="text-outline mr-2 shrink-0" />
               <input
                 className="bg-transparent border-none outline-none text-body-md placeholder:text-outline w-full sm:w-48 focus:ring-0 p-0"
                 placeholder="Search tickets..."
@@ -100,6 +108,13 @@ export default function UserDashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            <button
+              onClick={() => navigate('/create-ticket')}
+              className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-full font-body-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shrink-0"
+            >
+              <Plus size={18} />
+              <span>New Ticket</span>
+            </button>
           </div>
         </header>
 
@@ -107,7 +122,7 @@ export default function UserDashboard() {
         {loading ? (
           <div className="flex flex-col gap-4">
             {[1, 2].map((i) => (
-              <div key={i} className="bg-surface-container-lowest rounded-xl p-6 shadow-ambient animate-pulse">
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-ambient border border-outline-variant/15 animate-pulse">
                 <div className="flex justify-between items-start mb-4">
                   <div className="h-6 bg-surface-variant rounded w-1/4"></div>
                   <div className="h-6 bg-surface-variant rounded w-16"></div>
@@ -118,7 +133,7 @@ export default function UserDashboard() {
             ))}
           </div>
         ) : error ? (
-          <div className="bg-error-container/20 border border-error/20 p-6 rounded-xl text-center text-error flex flex-col items-center gap-2">
+          <div className="bg-error-container/20 border border-error/20 p-6 rounded-2xl text-center text-error flex flex-col items-center gap-2 shadow-ambient">
             <AlertTriangle size={32} />
             <p className="font-body-md">{error}</p>
             <button onClick={fetchTickets} className="text-primary hover:underline text-sm font-medium cursor-pointer">Try Again</button>
@@ -129,44 +144,51 @@ export default function UserDashboard() {
               <div
                 key={ticket._id}
                 onClick={() => navigate(`/tickets/${ticket._id}`)}
-                className="bg-surface-container-lowest rounded-xl p-6 shadow-ambient hover:bg-surface-bright transition-colors cursor-pointer group border border-transparent flex flex-col justify-between"
+                className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-[0px_14px_32px_rgba(12,82,86,0.14)] border border-outline-variant/30 hover:border-primary hover:-translate-y-1 transition-all duration-200 cursor-pointer group flex flex-col justify-between relative overflow-hidden"
               >
+                {/* Left Teal highlight bar that appears on hover */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-l-2xl"></div>
+
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
                   <div className="flex items-center gap-3">
-                    <span className="font-body-md text-on-surface-variant font-medium">#{ticket._id.substring(ticket._id.length - 6).toUpperCase()}</span>
+                    <span className="font-mono font-bold text-xs bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors px-2.5 py-0.5 rounded-md">
+                      #{ticket._id.substring(ticket._id.length - 6).toUpperCase()}
+                    </span>
                     <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                    <span className="font-body-md text-on-surface-variant">Updated {getRelativeTime(ticket.updatedAt)}</span>
+                    <span className="font-body-md text-on-surface-variant text-sm">Updated {getRelativeTime(ticket.updatedAt)}</span>
                   </div>
                   <div className="flex gap-2">
-                    <span className={`${getStatusBadgeStyles(ticket.status)} font-badge text-badge px-3 py-1 rounded-full flex items-center gap-1`}>
+                    <span className={`${getStatusBadgeStyles(ticket.status)} font-badge text-badge px-3 py-1 rounded-full flex items-center gap-1 font-semibold`}>
                       {ticket.status}
                     </span>
-                    <span className={`${getPriorityBadgeStyles(ticket.priority)} font-badge text-badge px-3 py-1 rounded-full flex items-center gap-1`}>
+                    <span className={`${getPriorityBadgeStyles(ticket.priority)} font-badge text-badge px-3 py-1 rounded-full flex items-center gap-1 font-semibold`}>
                       {ticket.priority}
                     </span>
                   </div>
                 </div>
-                <h3 className="font-section-header text-section-header text-on-surface mb-2 group-hover:text-primary transition-colors flex items-center justify-between">
+                <h3 className="font-section-header text-section-header text-on-surface mb-2 group-hover:text-primary transition-colors flex items-center justify-between font-semibold">
                   <span>{ticket.title}</span>
-                  <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-transparent group-hover:bg-primary/10 transition-colors">
+                    <ArrowRight size={18} className="text-on-surface-variant/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  </div>
                 </h3>
                 <p className="font-body-md text-on-surface-variant line-clamp-2">{ticket.description}</p>
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center bg-surface-container-lowest/50 rounded-xl p-8 shadow-ambient">
-            <div className="w-24 h-24 mb-6 bg-surface-variant rounded-full flex items-center justify-center shadow-ambient relative overflow-hidden text-outline">
-              <Inbox size={48} />
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-outline-variant/20 shadow-ambient">
+            <div className="w-24 h-24 mb-6 bg-surface-container rounded-full flex items-center justify-center shadow-inner relative overflow-hidden text-outline">
+              <Inbox size={48} className="text-primary/60" />
             </div>
-            <h2 className="font-h2 text-h2 text-on-surface mb-2">No active tickets</h2>
+            <h2 className="font-h2 text-h2 text-on-surface mb-2 font-bold">No active tickets</h2>
             <p className="font-body-lg text-on-surface-variant max-w-md mb-8">
               {searchQuery ? "No tickets found matching your query." : "You don't have any support requests at the moment. If you need help, feel free to create a new ticket."}
             </p>
             {!searchQuery && (
               <button
                 onClick={() => navigate('/create-ticket')}
-                className="bg-secondary text-on-secondary px-6 py-3 rounded-full font-body-lg font-medium hover:bg-secondary/90 transition-colors shadow-sm flex items-center gap-2 cursor-pointer mx-auto"
+                className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-full font-body-lg font-semibold hover:shadow-md transition-all shadow-sm flex items-center gap-2 cursor-pointer mx-auto"
               >
                 <Plus size={20} />
                 <span>Create New Ticket</span>

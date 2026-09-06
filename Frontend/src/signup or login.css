@@ -101,7 +101,7 @@
 .brand-panel-content {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   height: 100%;
   width: 100%;
 }
@@ -110,6 +110,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-bottom: 2rem;
 }
 
 .brand-logo-icon {
@@ -131,14 +132,14 @@
   font-family: var(--font-sora), sans-serif;
   font-size: 2.25rem;
   font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 0.75rem;
+  line-height: 1.25;
+  margin-bottom: 1rem;
 }
 
 .brand-subtext {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--color-dark-muted);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .brand-highlight {

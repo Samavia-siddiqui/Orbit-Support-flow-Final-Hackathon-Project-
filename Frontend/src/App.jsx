@@ -23,22 +23,37 @@ function SocketListener() {
       const currentPath = window.location.pathname;
       const onCurrentTicketPage = currentPath === `/tickets/${data.ticketId}`;
       
-      if (!onCurrentTicketPage) {
+      if (!onCurrentTicketPage && data && data.reply) {
         addNotification({
-          replyId: data.reply._id,
+          replyId: data.reply._id || `${data.ticketId}-${Date.now()}`,
           ticketId: data.ticketId,
           ticketTitle: data.ticketTitle,
           message: data.reply.message,
           sentBy: data.reply.sentBy,
-          createdAt: data.reply.createdAt,
+          createdAt: data.reply.createdAt || new Date().toISOString(),
+        });
+      }
+    };
+
+    const handleNewTicket = (data) => {
+      if (data && data.ticketId) {
+        addNotification({
+          replyId: `new-ticket-${data.ticketId}`,
+          ticketId: data.ticketId,
+          ticketTitle: data.ticketTitle,
+          message: `New ticket created: "${data.ticketTitle}" (${data.category})`,
+          sentBy: data.createdBy,
+          createdAt: data.createdAt || new Date().toISOString(),
         });
       }
     };
 
     socket.on('newReply', handleNewReply);
+    socket.on('newTicket', handleNewTicket);
 
     return () => {
       socket.off('newReply', handleNewReply);
+      socket.off('newTicket', handleNewTicket);
     };
   }, [socket, addNotification]);
 

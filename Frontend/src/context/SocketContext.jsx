@@ -24,8 +24,8 @@ export const SocketProvider = ({ children, user }) => {
     const socketInstance = io(socketUrl);
 
     socketInstance.on('connect', () => {
-      console.log('Socket connected, joining private room for user:', user._id);
-      socketInstance.emit('join', user._id);
+      console.log('Socket connected, joining room for user:', user._id, 'role:', user.role);
+      socketInstance.emit('join', { userId: user._id, role: user.role });
     });
 
     setSocket(socketInstance);

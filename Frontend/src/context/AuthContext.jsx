@@ -37,8 +37,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (userData) => {
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+    if (!userData) return;
+    setUser((prev) => {
+      const merged = { ...prev, ...userData };
+      localStorage.setItem('user', JSON.stringify(merged));
+      return merged;
+    });
   };
 
   const addNotification = (notif) => {

@@ -110,7 +110,7 @@ export const updateProfileImage = async (req, res) => {
     user.profileImagePublicId = req.file.filename;
     await user.save();
 
-    res.status(200).json({
+    const payload = {
       _id: user._id,
       name: user.name,
       email: user.email,
@@ -118,6 +118,11 @@ export const updateProfileImage = async (req, res) => {
       profileImageUrl: user.profileImageUrl,
       profileImagePublicId: user.profileImagePublicId,
       token: generateToken(user._id),
+    };
+
+    res.status(200).json({
+      ...payload,
+      user: payload,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Orbit, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import "./signup or login.css";
@@ -7,9 +8,13 @@ import api from "./api/axios";
 import Swal from 'sweetalert2';
 
 export default function SignupOrLogin() {
-  const [mode, setMode] = useState("login"); // 'login' | 'signup'
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const isRegister = location.pathname === "/register";
+  const [mode, setMode] = useState(() => (isRegister ? "signup" : "login"));
   const [phase, setPhase] = useState("idle"); // 'idle' | 'start' | 'cover' | 'exit'
-  const [dir, setDir] = useState(1); // 1 (to signup) | -1 (to login)
+  const [dir, setDir] = useState(() => (isRegister ? -1 : 1));
   const [busy, setBusy] = useState(false);
 
   // Password visibility states
@@ -28,6 +33,17 @@ export default function SignupOrLogin() {
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+
+  // Sync mode if URL changes externally while idle
+  useEffect(() => {
+    if (phase === "idle") {
+      if (location.pathname === "/register" && mode !== "signup") {
+        setMode("signup");
+      } else if (location.pathname === "/login" && mode !== "login") {
+        setMode("login");
+      }
+    }
+  }, [location.pathname, phase, mode]);
 
   // Transition state machine
   const triggerTransition = (targetMode) => {
@@ -50,8 +66,10 @@ export default function SignupOrLogin() {
 
   const handleAnimationComplete = () => {
     if (phase === "cover") {
-      // Toggle mode underneath the covered blade
-      setMode(mode === "login" ? "signup" : "login");
+      // Toggle mode underneath the covered blade and update URL accordingly
+      const nextMode = mode === "login" ? "signup" : "login";
+      setMode(nextMode);
+      navigate(nextMode === "signup" ? "/register" : "/login", { replace: true });
       setPhase("exit");
     } else if (phase === "exit") {
       setPhase("idle");

@@ -62,11 +62,18 @@ app.set('io', io);
 
 // Socket.io connection logic
 io.on('connection', (socket) => {
-  // Join a private room based on userId
-  socket.on('join', (userId) => {
+  // Join a private room based on userId and role
+  socket.on('join', (data) => {
+    const userId = typeof data === 'object' && data !== null ? data.userId : data;
+    const role = typeof data === 'object' && data !== null ? data.role : null;
+    
     if (userId) {
-      socket.join(userId);
+      socket.join(userId.toString());
       console.log(`User ${userId} joined their private room.`);
+    }
+    if (role === 'agent') {
+      socket.join('agents');
+      console.log(`Agent ${userId} joined the agents broadcast room.`);
     }
   });
 
