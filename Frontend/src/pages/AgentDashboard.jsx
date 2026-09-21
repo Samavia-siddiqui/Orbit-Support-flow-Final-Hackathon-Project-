@@ -16,7 +16,10 @@ import {
   Loader2, 
   HelpCircle,
   ToggleLeft,
-  Bell
+  Bell,
+  Menu,
+  X,
+  ChevronRight
 } from 'lucide-react';
 
 export default function AgentDashboard() {
@@ -37,6 +40,7 @@ export default function AgentDashboard() {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [updatingCategory, setUpdatingCategory] = useState('');
   
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('unassigned'); // 'unassigned' | 'my' | 'all'
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -253,34 +257,60 @@ export default function AgentDashboard() {
         <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-secondary rounded-full blur-[120px] opacity-[0.05] animate-pulse"></div>
       </div>
 
-      {/* Side Navigation Bar */}
-      <aside className="w-sidebar-width h-screen fixed left-0 top-0 bg-primary text-on-primary border-r border-outline-variant/20 flex flex-col py-6 z-20 shadow-md">
-        
+      {/* Mobile Backdrop Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-xs transition-opacity"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Side Navigation Bar (Drawer on mobile, fixed sidebar on desktop) */}
+      <aside 
+        className={`w-[260px] h-screen fixed left-0 top-0 bg-primary text-on-primary border-r border-outline-variant/20 flex flex-col py-6 z-50 shadow-2xl transition-transform duration-300 ease-in-out ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
         {/* Portal Header */}
-        <div className="px-6 mb-8 flex flex-col items-start gap-2">
+        <div className="px-6 mb-8 flex items-center justify-between">
           <div 
-            onClick={() => navigate('/profile')}
+            onClick={() => {
+              setMobileMenuOpen(false);
+              navigate('/profile');
+            }}
             className="flex items-center gap-3 cursor-pointer hover:opacity-85 transition-all"
             title="View Profile Settings"
           >
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-lg text-white overflow-hidden border border-white/20">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-lg text-white overflow-hidden border border-white/20 shrink-0">
               {user?.profileImageUrl ? (
                 <img src={user.profileImageUrl} alt="Agent Profile" className="w-full h-full object-cover" />
               ) : (
                 user?.name?.charAt(0).toUpperCase() || 'A'
               )}
             </div>
-            <div>
-              <h1 className="font-h2 text-sm font-bold text-white leading-none mb-1 truncate max-w-[140px]">{user?.name}</h1>
+            <div className="overflow-hidden">
+              <h1 className="font-h2 text-sm font-bold text-white leading-none mb-1 truncate max-w-[130px]">{user?.name}</h1>
               <span className="text-white/70 text-[10px] font-semibold tracking-wider uppercase">Agent Portal</span>
             </div>
           </div>
+
+          {/* Close button on mobile */}
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Navigation queue tabs */}
         <nav className="flex-grow flex flex-col gap-1">
           <button
-            onClick={() => setActiveTab('unassigned')}
+            onClick={() => {
+              setActiveTab('unassigned');
+              setMobileMenuOpen(false);
+            }}
             className={`flex items-center gap-3 px-6 py-3 w-full text-left transition-all ${
               activeTab === 'unassigned' 
                 ? 'bg-white/10 border-l-4 border-secondary text-white font-bold' 
@@ -292,7 +322,10 @@ export default function AgentDashboard() {
           </button>
           
           <button
-            onClick={() => setActiveTab('my')}
+            onClick={() => {
+              setActiveTab('my');
+              setMobileMenuOpen(false);
+            }}
             className={`flex items-center gap-3 px-6 py-3 w-full text-left transition-all ${
               activeTab === 'my' 
                 ? 'bg-white/10 border-l-4 border-secondary text-white font-bold' 
@@ -304,7 +337,10 @@ export default function AgentDashboard() {
           </button>
           
           <button
-            onClick={() => setActiveTab('all')}
+            onClick={() => {
+              setActiveTab('all');
+              setMobileMenuOpen(false);
+            }}
             className={`flex items-center gap-3 px-6 py-3 w-full text-left transition-all ${
               activeTab === 'all' 
                 ? 'bg-white/10 border-l-4 border-secondary text-white font-bold' 
@@ -320,7 +356,10 @@ export default function AgentDashboard() {
         <div className="px-6 mt-auto flex flex-col gap-4">
           <div className="flex flex-col gap-1 border-t border-white/10 pt-4">
             <button 
-              onClick={handleLogout}
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleLogout();
+              }}
               className="flex items-center gap-3 px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 rounded transition-all text-sm cursor-pointer"
             >
               <LogOut size={16} />
@@ -331,13 +370,56 @@ export default function AgentDashboard() {
       </aside>
 
       {/* Main Content Workspace */}
-      <main className="ml-[260px] flex-1 min-h-screen p-container-padding flex flex-col gap-stack-lg z-10">
+      <main className="lg:ml-[260px] flex-1 min-h-screen p-4 sm:p-6 lg:p-container-padding flex flex-col gap-5 sm:gap-stack-lg z-10 w-full overflow-x-hidden">
         
+        {/* Mobile Top Navigation Bar */}
+        <div className="lg:hidden flex items-center justify-between bg-surface-container-lowest p-3.5 rounded-2xl border border-outline-variant/30 shadow-sm">
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-2 rounded-xl bg-surface-container/60 hover:bg-surface-container text-primary transition-colors cursor-pointer flex items-center gap-2"
+            aria-label="Open sidebar menu"
+          >
+            <Menu size={22} />
+            <span className="font-bold text-xs uppercase tracking-wider text-primary">Menu</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <div 
+              onClick={() => navigate('/profile')}
+              className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs cursor-pointer border border-primary/20 overflow-hidden"
+              title="Profile"
+            >
+              {user?.profileImageUrl ? (
+                <img src={user.profileImageUrl} alt="Agent" className="w-full h-full object-cover" />
+              ) : (
+                user?.name?.charAt(0).toUpperCase() || 'A'
+              )}
+            </div>
+
+            {/* Mobile Notification Bell */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 bg-surface-container/60 rounded-full text-on-surface-variant hover:text-primary transition-colors cursor-pointer flex items-center justify-center"
+                title="Notifications"
+                aria-label="Notifications"
+              >
+                <Bell size={18} />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-secondary text-on-secondary text-[10px] font-bold min-w-[18px] h-4.5 rounded-full flex items-center justify-center px-1 animate-pulse shadow-sm">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Header toolbar */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h2 className="font-h1 text-h1 text-on-background">Agent Dashboard</h2>
-            <p className="font-body-md text-on-surface-variant mt-1">Overview of support request queues and live category states.</p>
+            <h2 className="font-h1 text-2xl sm:text-h1 text-on-background font-bold">Agent Dashboard</h2>
+            <p className="font-body-md text-sm sm:text-base text-on-surface-variant mt-1">Overview of support request queues and live category states.</p>
           </div>
           
           <div className="flex items-center gap-3 w-full md:w-auto">
@@ -352,8 +434,8 @@ export default function AgentDashboard() {
               />
             </div>
 
-            {/* Notification Bell Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            {/* Desktop Notification Bell Dropdown */}
+            <div className="hidden lg:block relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="relative p-2.5 bg-surface-container-lowest border border-outline-variant/60 rounded-full text-on-surface-variant hover:text-primary hover:border-primary/40 transition-colors shadow-ambient cursor-pointer flex items-center justify-center"
@@ -427,44 +509,44 @@ export default function AgentDashboard() {
         </header>
 
         {/* Statistics Widgets Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
-          <div className="bg-surface-container-lowest rounded-xl p-stack-md shadow-ambient flex flex-col gap-2">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-gutter">
+          <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-stack-md shadow-ambient flex flex-col gap-1.5 sm:gap-2">
             <div className="flex justify-between items-center text-on-surface-variant text-sm font-semibold">
               <span>Total Tickets</span>
               <LayoutDashboard size={18} className="text-outline" />
             </div>
-            <div className="font-h1 text-h1 text-on-background">{totalCount}</div>
+            <div className="font-h1 text-2xl sm:text-h1 font-bold text-on-background">{totalCount}</div>
             <span className="text-xs text-primary font-semibold flex items-center gap-1">
               <TrendingUp size={12} /> System aggregate
             </span>
           </div>
 
-          <div className="bg-surface-container-lowest rounded-xl p-stack-md shadow-ambient flex flex-col gap-2">
+          <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-stack-md shadow-ambient flex flex-col gap-1.5 sm:gap-2">
             <div className="flex justify-between items-center text-on-surface-variant text-sm font-semibold">
               <span>Unassigned Pool</span>
               <Inbox size={18} className="text-error" />
             </div>
-            <div className="font-h1 text-h1 text-on-background">{unassignedCount}</div>
+            <div className="font-h1 text-2xl sm:text-h1 font-bold text-on-background">{unassignedCount}</div>
             <span className="text-xs text-error font-semibold flex items-center gap-1">
               {unassignedCount > 0 ? '⚠️ Requires attention' : '✅ Clear'}
             </span>
           </div>
 
-          <div className="bg-surface-container-lowest rounded-xl p-stack-md shadow-ambient flex flex-col gap-2">
+          <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-stack-md shadow-ambient flex flex-col gap-1.5 sm:gap-2">
             <div className="flex justify-between items-center text-on-surface-variant text-sm font-semibold">
               <span>Assigned to You</span>
               <UserCheck size={18} className="text-secondary" />
             </div>
-            <div className="font-h1 text-h1 text-on-background">{myCount}</div>
-            <span className="text-xs text-on-surface-variant">Active processing</span>
+            <div className="font-h1 text-2xl sm:text-h1 font-bold text-on-background">{myCount}</div>
+            <span className="text-xs text-on-surface-variant font-medium">Active processing</span>
           </div>
 
-          <div className="bg-surface-container-lowest rounded-xl p-stack-md shadow-ambient flex flex-col gap-2">
+          <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-stack-md shadow-ambient flex flex-col gap-1.5 sm:gap-2">
             <div className="flex justify-between items-center text-on-surface-variant text-sm font-semibold">
               <span>Resolved Pool</span>
               <CheckCircle size={18} className="text-primary" />
             </div>
-            <div className="font-h1 text-h1 text-on-background">{resolvedCount}</div>
+            <div className="font-h1 text-2xl sm:text-h1 font-bold text-on-background">{resolvedCount}</div>
             <span className="text-xs text-primary font-semibold flex items-center gap-1">
               <TrendingUp size={12} /> Closed requests
             </span>
@@ -472,8 +554,8 @@ export default function AgentDashboard() {
         </section>
 
         {/* Category Availability Toggle block */}
-        <section className="bg-surface-container-lowest rounded-xl p-6 shadow-ambient">
-          <h3 className="font-section-header text-section-header text-on-surface mb-4">
+        <section className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-ambient">
+          <h3 className="font-section-header text-base sm:text-section-header font-bold text-on-surface mb-3 sm:mb-4">
             Category Agent Availability Controls
           </h3>
           {loadingCategories ? (
@@ -481,13 +563,13 @@ export default function AgentDashboard() {
               <Loader2 className="animate-spin text-primary" size={24} />
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
               {Object.keys(categories).map((catName) => (
                 <div 
                   key={catName} 
-                  className="bg-warm-ivory border border-outline-variant/30 rounded-xl p-4 flex flex-col justify-between items-center text-center shadow-sm"
+                  className="bg-warm-ivory border border-outline-variant/30 rounded-xl p-3 sm:p-4 flex flex-col justify-between items-center text-center shadow-xs"
                 >
-                  <span className="font-body-md font-bold text-primary mb-3">{catName}</span>
+                  <span className="font-body-md text-xs sm:text-sm font-bold text-primary mb-2 sm:mb-3 truncate max-w-full">{catName}</span>
                   
                   {/* Custom Toggle switch */}
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -498,10 +580,10 @@ export default function AgentDashboard() {
                       disabled={updatingCategory === catName}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-outline-variant/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+                    <div className="w-10 sm:w-11 h-5.5 sm:h-6 bg-outline-variant/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4.5 sm:after:h-5 after:w-4.5 sm:after:w-5 after:transition-all peer-checked:bg-secondary"></div>
                   </label>
                   
-                  <span className={`text-[10px] font-extrabold mt-3 tracking-wide ${
+                  <span className={`text-[9px] sm:text-[10px] font-extrabold mt-2 sm:mt-3 tracking-wide ${
                     categories[catName] ? 'text-primary' : 'text-on-surface-variant/70'
                   }`}>
                     {categories[catName] ? 'AVAILABLE' : 'OFFLINE'}
@@ -513,144 +595,210 @@ export default function AgentDashboard() {
         </section>
 
         {/* Filters and Ticket List Queue */}
-        <section className="bg-surface-container-lowest rounded-xl shadow-ambient flex-1 flex flex-col overflow-hidden">
+        <section className="bg-surface-container-lowest rounded-xl shadow-ambient flex-1 flex flex-col overflow-hidden w-full">
           
           {/* Header filter controls */}
-          <div className="flex flex-wrap items-center justify-between border-b border-outline-variant/20 px-6 py-4 gap-4">
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-outline-variant/20 p-3.5 sm:px-6 sm:py-4 gap-3 sm:gap-4">
+            
+            {/* Tab switches */}
+            <div className="grid grid-cols-3 gap-1 bg-surface-container/60 p-1 rounded-xl sm:flex sm:bg-transparent sm:p-0 sm:gap-2 w-full sm:w-auto">
               <button 
                 onClick={() => setActiveTab('unassigned')}
-                className={`px-4 py-2 font-bold text-sm rounded-full transition-all ${
+                className={`px-2.5 sm:px-4 py-2 font-bold text-xs sm:text-sm rounded-lg sm:rounded-full transition-all text-center ${
                   activeTab === 'unassigned' 
                     ? 'bg-primary text-white shadow-sm' 
                     : 'text-on-surface-variant hover:text-primary hover:bg-surface-variant'
                 } cursor-pointer`}
               >
-                Unassigned Pool ({unassignedCount})
+                Unassigned ({unassignedCount})
               </button>
               <button 
                 onClick={() => setActiveTab('my')}
-                className={`px-4 py-2 font-bold text-sm rounded-full transition-all ${
+                className={`px-2.5 sm:px-4 py-2 font-bold text-xs sm:text-sm rounded-lg sm:rounded-full transition-all text-center ${
                   activeTab === 'my' 
                     ? 'bg-primary text-white shadow-sm' 
                     : 'text-on-surface-variant hover:text-primary hover:bg-surface-variant'
                 } cursor-pointer`}
               >
-                Assigned to Me ({myCount})
+                Assigned ({myCount})
               </button>
               <button 
                 onClick={() => setActiveTab('all')}
-                className={`px-4 py-2 font-bold text-sm rounded-full transition-all ${
+                className={`px-2.5 sm:px-4 py-2 font-bold text-xs sm:text-sm rounded-lg sm:rounded-full transition-all text-center ${
                   activeTab === 'all' 
                     ? 'bg-primary text-white shadow-sm' 
                     : 'text-on-surface-variant hover:text-primary hover:bg-surface-variant'
                 } cursor-pointer`}
               >
-                All Tickets ({totalCount})
+                All ({totalCount})
               </button>
             </div>
 
             {/* Filter selectors */}
-            <div className="flex items-center gap-2">
-              <div>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-surface-container-lowest border border-outline-variant rounded-full px-3 py-1.5 text-xs font-semibold outline-none focus:border-primary cursor-pointer"
-                >
-                  <option value="All">All Statuses</option>
-                  <option value="Open">Open</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Resolved">Resolved</option>
-                  <option value="Closed">Closed</option>
-                </select>
-              </div>
+            <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl sm:rounded-full px-3 py-1.5 text-xs font-semibold outline-none focus:border-primary cursor-pointer text-center sm:text-left shadow-2xs"
+              >
+                <option value="All">All Statuses</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+              </select>
 
-              <div>
-                <select
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="bg-surface-container-lowest border border-outline-variant rounded-full px-3 py-1.5 text-xs font-semibold outline-none focus:border-primary cursor-pointer"
-                >
-                  <option value="All">All Priorities</option>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </div>
+              <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl sm:rounded-full px-3 py-1.5 text-xs font-semibold outline-none focus:border-primary cursor-pointer text-center sm:text-left shadow-2xs"
+              >
+                <option value="All">All Priorities</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
             </div>
           </div>
 
-          {/* Ticket Listing Queue Table */}
-          <div className="flex-1 overflow-auto">
+          {/* Ticket Listing Queue Container */}
+          <div className="flex-1 w-full">
             {loadingTickets ? (
               <div className="flex items-center justify-center h-48">
                 <Loader2 className="animate-spin text-primary" size={32} />
               </div>
             ) : filteredTickets.length > 0 ? (
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-surface-container-highest/50 font-badge text-badge text-on-surface-variant uppercase border-b border-outline-variant/10">
-                  <tr>
-                    <th className="py-3 px-6 font-semibold">Ticket #</th>
-                    <th className="py-3 px-6 font-semibold">Subject</th>
-                    <th className="py-3 px-6 font-semibold">Customer</th>
-                    <th className="py-3 px-6 font-semibold">Category</th>
-                    <th className="py-3 px-6 font-semibold">Priority</th>
-                    <th className="py-3 px-6 font-semibold">Status</th>
-                    <th className="py-3 px-6 font-semibold text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="font-body-md text-body-md divide-y divide-outline-variant/10">
+              <>
+                {/* 1. MOBILE VIEW: Professional Card List (Zero Horizontal Scroll!) */}
+                <div className="md:hidden divide-y divide-outline-variant/15 w-full">
                   {filteredTickets.map((ticket) => (
-                    <tr 
+                    <div 
                       key={ticket._id}
                       onClick={() => navigate(`/tickets/${ticket._id}`)}
-                      className="hover:bg-warm-ivory/50 transition-colors cursor-pointer group"
+                      className="p-3.5 hover:bg-warm-ivory/60 active:bg-surface-variant/30 transition-colors cursor-pointer flex flex-col gap-2"
                     >
-                      <td className="py-4 px-6 text-on-surface-variant font-mono text-xs font-bold">
-                        #{ticket._id.substring(ticket._id.length - 6).toUpperCase()}
-                      </td>
-                      <td className="py-4 px-6 font-semibold text-on-background truncate max-w-[200px]">
+                      {/* Top row: Ticket ID, Category & Badges */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                            #{ticket._id.substring(ticket._id.length - 6).toUpperCase()}
+                          </span>
+                          <span className="text-[11px] font-semibold text-on-surface-variant bg-surface-variant/60 px-2 py-0.5 rounded">
+                            {ticket.category}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`px-2 py-0.5 rounded font-badge text-[10px] font-bold ${getPriorityBadgeStyles(ticket.priority)}`}>
+                            {ticket.priority}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full font-badge text-[10px] font-bold border ${getStatusBadgeStyles(ticket.status)}`}>
+                            {ticket.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Middle row: Subject / Title */}
+                      <h4 className="font-semibold text-sm text-on-background line-clamp-2 leading-snug">
                         {ticket.title}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-secondary/15 flex items-center justify-center text-[10px] font-bold text-secondary border border-outline-variant/10">
+                      </h4>
+
+                      {/* Bottom row: Customer info + Action Button / Assigned Badge */}
+                      <div className="flex items-center justify-between pt-1 gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="w-5 h-5 rounded-full bg-secondary/15 flex items-center justify-center text-[9px] font-bold text-secondary border border-outline-variant/10 shrink-0">
                             {ticket.createdBy?.name?.substring(0, 2).toUpperCase() || 'U'}
                           </div>
-                          <span className="font-medium text-sm text-on-surface">{ticket.createdBy?.name || 'User'}</span>
+                          <span className="font-medium text-xs text-on-surface truncate">{ticket.createdBy?.name || 'User'}</span>
                         </div>
-                      </td>
-                      <td className="py-4 px-6 text-on-surface-variant text-sm font-semibold">{ticket.category}</td>
-                      <td className="py-4 px-6">
-                        <span className={`px-2 py-0.5 rounded font-badge text-[11px] font-bold ${getPriorityBadgeStyles(ticket.priority)}`}>
-                          {ticket.priority}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className={`px-2.5 py-0.5 rounded-full font-badge text-[10px] font-bold tracking-wide border ${getStatusBadgeStyles(ticket.status)}`}>
-                          {ticket.status}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        {!ticket.assignedTo && (
-                          <button
-                            onClick={(e) => handleAssignToMe(ticket._id, e)}
-                            className="py-1 px-3 bg-primary/10 text-primary rounded-full text-xs font-bold hover:bg-primary hover:text-on-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
-                          >
-                            Assign to me
-                          </button>
-                        )}
-                        {ticket.assignedTo && (
-                          <span className="text-xs text-on-surface-variant opacity-80 font-medium">
-                            Assigned to {ticket.assignedTo.name === user.name ? 'Me' : ticket.assignedTo.name}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
+
+                        <div className="shrink-0 flex items-center gap-1.5">
+                          {!ticket.assignedTo ? (
+                            <button
+                              onClick={(e) => handleAssignToMe(ticket._id, e)}
+                              className="py-1 px-3 bg-primary text-white rounded-full text-xs font-bold hover:bg-primary/90 shadow-xs cursor-pointer"
+                            >
+                              Assign to me
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-semibold text-on-surface-variant bg-surface-variant/50 px-2.5 py-0.5 rounded-full">
+                              {ticket.assignedTo.name === user.name ? 'Assigned to Me' : `Assigned: ${ticket.assignedTo.name}`}
+                            </span>
+                          )}
+                          <ChevronRight size={16} className="text-outline-variant" />
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+
+                {/* 2. DESKTOP / TABLET VIEW: Sleek Multi-column Table */}
+                <div className="hidden md:block w-full overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-surface-container-highest/50 font-badge text-badge text-on-surface-variant uppercase border-b border-outline-variant/10">
+                      <tr>
+                        <th className="py-3 px-6 font-semibold">Ticket #</th>
+                        <th className="py-3 px-6 font-semibold">Subject</th>
+                        <th className="py-3 px-6 font-semibold">Customer</th>
+                        <th className="py-3 px-6 font-semibold">Category</th>
+                        <th className="py-3 px-6 font-semibold">Priority</th>
+                        <th className="py-3 px-6 font-semibold">Status</th>
+                        <th className="py-3 px-6 font-semibold text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-body-md text-body-md divide-y divide-outline-variant/10">
+                      {filteredTickets.map((ticket) => (
+                        <tr 
+                          key={ticket._id}
+                          onClick={() => navigate(`/tickets/${ticket._id}`)}
+                          className="hover:bg-warm-ivory/50 transition-colors cursor-pointer group"
+                        >
+                          <td className="py-4 px-6 text-on-surface-variant font-mono text-xs font-bold">
+                            #{ticket._id.substring(ticket._id.length - 6).toUpperCase()}
+                          </td>
+                          <td className="py-4 px-6 font-semibold text-on-background truncate max-w-[200px]">
+                            {ticket.title}
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-secondary/15 flex items-center justify-center text-[10px] font-bold text-secondary border border-outline-variant/10 shrink-0">
+                                {ticket.createdBy?.name?.substring(0, 2).toUpperCase() || 'U'}
+                              </div>
+                              <span className="font-medium text-sm text-on-surface truncate max-w-[140px]">{ticket.createdBy?.name || 'User'}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 text-on-surface-variant text-sm font-semibold">{ticket.category}</td>
+                          <td className="py-4 px-6">
+                            <span className={`px-2 py-0.5 rounded font-badge text-[11px] font-bold ${getPriorityBadgeStyles(ticket.priority)}`}>
+                              {ticket.priority}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6">
+                            <span className={`px-2.5 py-0.5 rounded-full font-badge text-[10px] font-bold tracking-wide border ${getStatusBadgeStyles(ticket.status)}`}>
+                              {ticket.status}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            {!ticket.assignedTo && (
+                              <button
+                                onClick={(e) => handleAssignToMe(ticket._id, e)}
+                                className="py-1 px-3 bg-primary/10 text-primary rounded-full text-xs font-bold hover:bg-primary hover:text-on-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                              >
+                                Assign to me
+                              </button>
+                            )}
+                            {ticket.assignedTo && (
+                              <span className="text-xs text-on-surface-variant opacity-80 font-medium">
+                                Assigned to {ticket.assignedTo.name === user.name ? 'Me' : ticket.assignedTo.name}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 text-center text-on-surface-variant">
                 <HelpCircle size={36} className="mb-2 opacity-50" />

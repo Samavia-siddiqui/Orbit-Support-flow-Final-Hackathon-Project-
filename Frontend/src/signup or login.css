@@ -23,6 +23,7 @@
   align-items: center;
   padding: 1.5rem;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Card Container */
@@ -54,7 +55,7 @@
   clip-path: polygon(58% 0, 100% 0, 100% 100%, 42% 100%);
 }
 
-/* Constrain content to safe zones inside the diagonal cut */
+/* Constrain content to safe zones inside the diagonal cut on Desktop */
 .panel-content {
   width: 43%;
   height: 100%;
@@ -144,6 +145,11 @@
 
 .brand-highlight {
   color: var(--color-accent);
+}
+
+/* Mobile brand badge (hidden on desktop) */
+.mobile-brand-badge {
+  display: none;
 }
 
 /* Form Styles */
@@ -399,4 +405,149 @@
   top: 75%;
   left: 82%;
   animation: floatUpAndDown-1 4.8s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   RESPONSIVE STYLES (TABLETS & MOBILE PHONES)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .auth-page-wrapper {
+    padding: 1.25rem 1rem;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .auth-card-container {
+    max-width: 440px;
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    background-color: var(--color-cream-panel);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Reset diagonal clips and position on mobile */
+  .panel {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: auto;
+    clip-path: none !important;
+  }
+
+  /* In login mode, display the left panel (form) and hide brand panel */
+  .panel-left.panel-cream {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: auto;
+  }
+
+  .panel-right.panel-dark {
+    display: none !important;
+  }
+
+  /* In signup mode, display the right panel (form) and hide brand panel */
+  .panel-right.panel-cream {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: auto;
+  }
+
+  .panel-left.panel-dark {
+    display: none !important;
+  }
+
+  /* Full width padding inside mobile form */
+  .panel-content {
+    width: 100% !important;
+    height: auto !important;
+    padding: 2rem 1.5rem !important;
+    margin: 0 !important;
+  }
+
+  .form-panel-content {
+    height: auto;
+    gap: 1.25rem;
+  }
+
+  /* Mobile Brand Badge displayed at top of mobile forms */
+  .mobile-brand-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .mobile-brand-badge .brand-logo-icon {
+    color: var(--color-dark-panel);
+  }
+
+  .mobile-brand-badge .brand-logo-text {
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: 0.05em;
+    color: var(--color-dark-panel);
+  }
+
+  .form-header {
+    margin-bottom: 0.5rem;
+  }
+
+  .form-title {
+    font-size: 1.65rem;
+  }
+
+  .form-fields-container {
+    gap: 0.85rem;
+  }
+
+  .auth-options-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .auth-action-row {
+    margin-top: 1rem;
+  }
+
+  /* Disable blade transition on mobile to prevent clipping / layout jitter */
+  .transition-blade {
+    display: none;
+  }
+}
+
+/* Extra small screens (e.g. iPhone SE, 320px - 380px) */
+@media (max-width: 380px) {
+  .auth-page-wrapper {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .panel-content {
+    padding: 1.5rem 1rem !important;
+  }
+
+  .form-title {
+    font-size: 1.45rem;
+  }
+
+  .auth-input {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .auth-input-with-icon {
+    padding-left: 2.25rem;
+  }
+
+  .auth-btn-primary {
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
+  }
 }

@@ -219,10 +219,11 @@ export default function Header() {
               {user.role === 'user' && location.pathname !== '/create-ticket' && (
                 <button
                   onClick={() => navigate('/create-ticket')}
-                  className="bg-secondary text-on-secondary px-4 py-2 rounded-full font-body-lg flex items-center gap-2 hover:bg-secondary/90 transition-colors shadow-sm cursor-pointer"
+                  className="bg-secondary text-on-secondary px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full font-body-md text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2 hover:bg-secondary/90 transition-colors shadow-sm cursor-pointer shrink-0"
+                  title="Create New Ticket"
                 >
-                  <Plus size={18} />
-                  <span>Create Request</span>
+                  <Plus size={16} />
+                  <span className="hidden sm:inline">Create Request</span>
                 </button>
               )}
             </>

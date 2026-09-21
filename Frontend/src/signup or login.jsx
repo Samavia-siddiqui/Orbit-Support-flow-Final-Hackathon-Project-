@@ -185,6 +185,10 @@ export default function SignupOrLogin() {
               /* Login Form on Left */
               <form onSubmit={handleFormSubmit} className="form-panel-content">
                 <div className="form-header">
+                  <div className="mobile-brand-badge">
+                    <Orbit className="brand-logo-icon" size={22} />
+                    <span className="brand-logo-text">ORBIT</span>
+                  </div>
                   <h2 className="form-title tracking-tight">Sign in</h2>
                   {error && (
                     <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '0.8rem', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', marginTop: '0.5rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
@@ -338,6 +342,10 @@ export default function SignupOrLogin() {
               /* Signup Form on Right */
               <form onSubmit={handleFormSubmit} className="form-panel-content">
                 <div className="form-header">
+                  <div className="mobile-brand-badge">
+                    <Orbit className="brand-logo-icon" size={22} />
+                    <span className="brand-logo-text">ORBIT</span>
+                  </div>
                   <h2 className="form-title tracking-tight">Create account</h2>
                   {error && (
                     <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '0.8rem', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', marginTop: '0.5rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
