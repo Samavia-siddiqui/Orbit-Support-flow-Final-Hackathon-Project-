@@ -5,7 +5,7 @@ import { LogOut, Plus, Bell } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export default function Header() {
-  const { user, logout, notifications, clearNotification } = useAuth();
+  const { user, logout, notifications, clearNotification, clearAllNotifications } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -58,9 +58,12 @@ export default function Header() {
 
   const handleClearAll = (e) => {
     e.stopPropagation();
-    // Clear notifications for all tickets in the list
-    const uniqueTicketIds = [...new Set(notifications.map(n => n.ticketId))];
-    uniqueTicketIds.forEach(id => clearNotification(id));
+    if (clearAllNotifications) {
+      clearAllNotifications();
+    } else {
+      const uniqueTicketIds = [...new Set(notifications.map(n => n.ticketId))];
+      uniqueTicketIds.forEach(id => clearNotification(id));
+    }
   };
 
   return (

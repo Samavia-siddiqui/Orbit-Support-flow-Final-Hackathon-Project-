@@ -21,7 +21,23 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const stored = localStorage.getItem('orbit_notifications');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Save notifications to localStorage when changed
+  useEffect(() => {
+    try {
+      localStorage.setItem('orbit_notifications', JSON.stringify(notifications));
+    } catch (err) {
+      console.error('Error saving notifications to localStorage:', err);
+    }
+  }, [notifications]);
 
   const login = (userData, token) => {
     localStorage.setItem('user', JSON.stringify(userData));
@@ -32,6 +48,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('orbit_notifications');
     setUser(null);
     setNotifications([]);
   };
@@ -58,6 +75,10 @@ export const AuthProvider = ({ children }) => {
     setNotifications((prev) => prev.filter((n) => n.ticketId !== ticketId));
   };
 
+  const clearAllNotifications = () => {
+    setNotifications([]);
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -67,7 +88,8 @@ export const AuthProvider = ({ children }) => {
       loading,
       notifications,
       addNotification,
-      clearNotification
+      clearNotification,
+      clearAllNotifications,
     }}>
       {!loading && children}
     </AuthContext.Provider>

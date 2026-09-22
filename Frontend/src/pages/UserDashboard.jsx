@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import Header from '../components/Header';
 import BackgroundBlobs from '../components/BackgroundBlobs';
+import { useSocket } from '../context/SocketContext';
 import { Search, Plus, Inbox, AlertTriangle, ArrowRight } from 'lucide-react';
 
 export default function UserDashboard() {
+  const socket = useSocket();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,6 +17,33 @@ export default function UserDashboard() {
   useEffect(() => {
     fetchTickets();
   }, []);
+
+  const fetchTicketsSilent = async () => {
+    try {
+      const res = await api.get('/tickets/my');
+      setTickets(res.data);
+    } catch (err) {
+      console.error('Error auto-refreshing user tickets:', err);
+    }
+  };
+
+  // Real-time socket updates for replies & status updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLiveUpdate = () => {
+      console.log('[UserDashboard] Live socket update received, refreshing tickets list silently.');
+      fetchTicketsSilent();
+    };
+
+    socket.on('newReply', handleLiveUpdate);
+    socket.on('ticketStatusUpdated', handleLiveUpdate);
+
+    return () => {
+      socket.off('newReply', handleLiveUpdate);
+      socket.off('ticketStatusUpdated', handleLiveUpdate);
+    };
+  }, [socket]);
 
   const fetchTickets = async () => {
     try {

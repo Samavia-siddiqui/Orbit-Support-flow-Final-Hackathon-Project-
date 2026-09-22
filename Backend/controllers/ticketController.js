@@ -17,19 +17,31 @@ export const createTicket = async (req, res) => {
       createdBy: req.user._id,
     });
 
+    const populatedTicket = await Ticket.findById(ticket._id)
+      .populate('createdBy', 'name email profileImageUrl')
+      .populate('assignedTo', 'name email profileImageUrl');
+
     const io = req.app.get('io');
     if (io) {
-      io.to('agents').emit('newTicket', {
-        ticketId: ticket._id,
+      const payload = {
+        ticketId: ticket._id.toString(),
         ticketTitle: ticket.title,
         createdBy: {
-          _id: req.user._id,
+          _id: req.user._id.toString(),
           name: req.user.name,
+          email: req.user.email,
+          profileImageUrl: req.user.profileImageUrl,
         },
         category: ticket.category,
         priority: ticket.priority,
+        status: ticket.status,
         createdAt: ticket.createdAt,
-      });
+        ticket: populatedTicket || ticket,
+      };
+
+      console.log(`[Socket] Broadcasting newTicket event for ticket ${ticket._id}`);
+      io.to('agents').emit('newTicket', payload);
+      io.to('admin').emit('newTicket', payload);
     }
 
     res.status(201).json(ticket);
@@ -57,8 +69,8 @@ export const getAllTickets = async (req, res) => {
     }
 
     const tickets = await Ticket.find(filter)
-      .populate('createdBy', 'name email')
-      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email profileImageUrl')
+      .populate('assignedTo', 'name email profileImageUrl')
       .sort({ createdAt: -1 });
 
     res.status(200).json(tickets);
@@ -80,7 +92,7 @@ export const getTicketById = async (req, res) => {
     }
 
     const isOwner = ticket.createdBy._id.toString() === req.user._id.toString();
-    const isAgent = req.user.role === 'agent';
+    const isAgent = req.user.role === 'agent' || req.user.role === 'admin';
 
     if (!isOwner && !isAgent) {
       return res.status(403).json({ message: 'Not authorized to view this ticket' });
@@ -106,7 +118,7 @@ export const addReply = async (req, res) => {
     }
 
     const isOwner = ticket.createdBy.toString() === req.user._id.toString();
-    const isAgent = req.user.role === 'agent';
+    const isAgent = req.user.role === 'agent' || req.user.role === 'admin';
 
     if (!isOwner && !isAgent) {
       return res.status(403).json({ message: 'Not authorized to reply to this ticket' });
@@ -130,27 +142,33 @@ export const addReply = async (req, res) => {
     if (io) {
       const addedReply = updatedTicket.replies[updatedTicket.replies.length - 1];
       const payload = {
-        ticketId: updatedTicket._id,
+        ticketId: updatedTicket._id.toString(),
         ticketTitle: updatedTicket.title,
         reply: addedReply,
+        ticket: updatedTicket,
       };
 
+      const creatorId = (updatedTicket.createdBy?._id || updatedTicket.createdBy).toString();
+
       if (isAgent) {
-        // Agent replied -> notify user (createdBy)
-        io.to(updatedTicket.createdBy._id.toString()).emit('newReply', payload);
+        // Agent/Admin replied -> notify customer (createdBy) in their private room
+        console.log(`[Socket] Agent replied, emitting newReply to user room ${creatorId}`);
+        io.to(creatorId).emit('newReply', payload);
       } else {
-        // User replied -> notify assigned agent (if assigned) or broadcast to all agents!
+        // Customer replied -> notify assigned agent or broadcast to all agents
         if (updatedTicket.assignedTo) {
-          io.to(updatedTicket.assignedTo._id.toString()).emit('newReply', payload);
-        } else {
-          io.to('agents').emit('newReply', payload);
+          const assignedId = (updatedTicket.assignedTo._id || updatedTicket.assignedTo).toString();
+          io.to(assignedId).emit('newReply', payload);
         }
+        console.log(`[Socket] User replied, emitting newReply to agents broadcast rooms`);
+        io.to('agents').emit('newReply', payload);
+        io.to('admin').emit('newReply', payload);
       }
     }
 
     res.status(201).json({
       ...updatedTicket.toObject(),
-      reply: addedReply,
+      reply: updatedTicket.replies[updatedTicket.replies.length - 1],
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -184,6 +202,23 @@ export const updateTicketStatus = async (req, res) => {
       .populate('createdBy', 'name email profileImageUrl')
       .populate('assignedTo', 'name email profileImageUrl')
       .populate('replies.sentBy', 'name email profileImageUrl');
+
+    // Socket.io notification for status change
+    const io = req.app.get('io');
+    if (io) {
+      const statusPayload = {
+        ticketId: updatedTicket._id.toString(),
+        ticketTitle: updatedTicket.title,
+        status: updatedTicket.status,
+        assignedTo: updatedTicket.assignedTo,
+        ticket: updatedTicket,
+      };
+
+      const creatorId = (updatedTicket.createdBy?._id || updatedTicket.createdBy).toString();
+      io.to(creatorId).emit('ticketStatusUpdated', statusPayload);
+      io.to('agents').emit('ticketStatusUpdated', statusPayload);
+      io.to('admin').emit('ticketStatusUpdated', statusPayload);
+    }
 
     res.status(200).json(updatedTicket);
   } catch (error) {

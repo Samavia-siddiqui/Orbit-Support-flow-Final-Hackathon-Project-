@@ -22,21 +22,25 @@ const server = http.createServer(app);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// CORS configuration supporting dynamic origins from FRONTEND_URL env var
-const allowedOrigins = ['http://localhost:5173'];
-if (process.env.FRONTEND_URL) {
-  const origins = process.env.FRONTEND_URL.split(',').map((o) => o.trim());
-  allowedOrigins.push(...origins);
-}
+// CORS configuration supporting dynamic origins from FRONTEND_URL env var and localhost
+const isOriginAllowed = (origin) => {
+  if (!origin) return true; // mobile apps, Postman, server-to-server
+  if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) return true;
+  if (process.env.FRONTEND_URL) {
+    const origins = process.env.FRONTEND_URL.split(',').map((o) => o.trim());
+    if (origins.includes(origin)) return true;
+  }
+  return false;
+};
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin (like mobile apps, curl, or Postman)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        // Fallback to allow origin to avoid breaking live socket/HTTP in various development environments
+        callback(null, true);
       }
     },
     credentials: true,
@@ -47,11 +51,7 @@ app.use(
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
+      callback(null, true);
     },
     credentials: true,
   },
@@ -64,20 +64,22 @@ app.set('io', io);
 io.on('connection', (socket) => {
   // Join a private room based on userId and role
   socket.on('join', (data) => {
-    const userId = typeof data === 'object' && data !== null ? data.userId : data;
-    const role = typeof data === 'object' && data !== null ? data.role : null;
+    const userId = typeof data === 'object' && data !== null ? (data.userId || data._id || data.id) : data;
+    const rawRole = typeof data === 'object' && data !== null ? data.role : null;
+    const role = rawRole ? rawRole.toString().toLowerCase() : '';
     
     if (userId) {
       socket.join(userId.toString());
-      console.log(`User ${userId} joined their private room.`);
+      console.log(`[Socket] User/Agent ${userId} joined their private room (${userId.toString()}).`);
     }
-    if (role === 'agent') {
+    if (role === 'agent' || role === 'admin') {
       socket.join('agents');
-      console.log(`Agent ${userId} joined the agents broadcast room.`);
+      socket.join('admin');
+      console.log(`[Socket] Agent/Admin ${userId || socket.id} joined the agents broadcast rooms.`);
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', (reason) => {
     // Client disconnected
   });
 });

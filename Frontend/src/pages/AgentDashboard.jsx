@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export default function AgentDashboard() {
-  const { user, logout, notifications, clearNotification } = useAuth();
+  const { user, logout, notifications, clearNotification, clearAllNotifications } = useAuth();
   const socket = useSocket();
   const navigate = useNavigate();
 
@@ -74,19 +74,22 @@ export default function AgentDashboard() {
     }
   };
 
-  // Real-time socket updates for new replies and tickets
+  // Real-time socket updates for new replies, new tickets, and status changes
   useEffect(() => {
     if (!socket) return;
     const handleLiveTicketUpdate = () => {
+      console.log('[AgentDashboard] Live socket event received, updating ticket queue silently.');
       fetchTicketsSilent();
     };
 
     socket.on('newReply', handleLiveTicketUpdate);
     socket.on('newTicket', handleLiveTicketUpdate);
+    socket.on('ticketStatusUpdated', handleLiveTicketUpdate);
 
     return () => {
       socket.off('newReply', handleLiveTicketUpdate);
       socket.off('newTicket', handleLiveTicketUpdate);
+      socket.off('ticketStatusUpdated', handleLiveTicketUpdate);
     };
   }, [socket]);
 
@@ -98,8 +101,12 @@ export default function AgentDashboard() {
 
   const handleClearAllNotifications = (e) => {
     e.stopPropagation();
-    const uniqueTicketIds = [...new Set(notifications.map((n) => n.ticketId))];
-    uniqueTicketIds.forEach((id) => clearNotification(id));
+    if (clearAllNotifications) {
+      clearAllNotifications();
+    } else {
+      const uniqueTicketIds = [...new Set(notifications.map((n) => n.ticketId))];
+      uniqueTicketIds.forEach((id) => clearNotification(id));
+    }
   };
 
   const fetchTickets = async () => {

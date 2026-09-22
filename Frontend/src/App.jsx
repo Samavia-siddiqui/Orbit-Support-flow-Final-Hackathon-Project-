@@ -14,48 +14,83 @@ import { useEffect } from 'react';
 
 function SocketListener() {
   const socket = useSocket();
-  const { addNotification } = useAuth();
+  const { addNotification, user } = useAuth();
 
   useEffect(() => {
     if (!socket) return;
 
     const handleNewReply = (data) => {
+      if (!data || !data.reply) return;
       const currentPath = window.location.pathname;
       const onCurrentTicketPage = currentPath === `/tickets/${data.ticketId}`;
       
-      if (!onCurrentTicketPage && data && data.reply) {
+      // Do not notify self about own sent message
+      const senderId = (data.reply.sentBy?._id || data.reply.sentBy)?.toString();
+      const currentUserId = user?._id?.toString();
+      if (senderId && currentUserId && senderId === currentUserId) {
+        return;
+      }
+
+      if (!onCurrentTicketPage) {
         addNotification({
           replyId: data.reply._id || `${data.ticketId}-${Date.now()}`,
           ticketId: data.ticketId,
-          ticketTitle: data.ticketTitle,
+          ticketTitle: data.ticketTitle || 'Support Ticket',
           message: data.reply.message,
           sentBy: data.reply.sentBy,
           createdAt: data.reply.createdAt || new Date().toISOString(),
+          type: 'reply',
         });
       }
     };
 
     const handleNewTicket = (data) => {
-      if (data && data.ticketId) {
+      if (!data || !data.ticketId) return;
+
+      // Only notify if current user is agent/admin
+      const role = user?.role?.toLowerCase();
+      if (role === 'agent' || role === 'admin') {
         addNotification({
           replyId: `new-ticket-${data.ticketId}`,
           ticketId: data.ticketId,
           ticketTitle: data.ticketTitle,
-          message: `New ticket created: "${data.ticketTitle}" (${data.category})`,
+          message: `New support request: "${data.ticketTitle}" (${data.category || 'General'})`,
           sentBy: data.createdBy,
           createdAt: data.createdAt || new Date().toISOString(),
+          type: 'new_ticket',
+        });
+      }
+    };
+
+    const handleTicketStatusUpdated = (data) => {
+      if (!data || !data.ticketId) return;
+      const currentPath = window.location.pathname;
+      const onCurrentTicketPage = currentPath === `/tickets/${data.ticketId}`;
+
+      // Notify customer if status changed and not on that ticket page
+      if (user?.role !== 'agent' && !onCurrentTicketPage) {
+        addNotification({
+          replyId: `status-${data.ticketId}-${Date.now()}`,
+          ticketId: data.ticketId,
+          ticketTitle: data.ticketTitle,
+          message: `Status updated to "${data.status}"`,
+          sentBy: { name: 'Support System' },
+          createdAt: new Date().toISOString(),
+          type: 'status_update',
         });
       }
     };
 
     socket.on('newReply', handleNewReply);
     socket.on('newTicket', handleNewTicket);
+    socket.on('ticketStatusUpdated', handleTicketStatusUpdated);
 
     return () => {
       socket.off('newReply', handleNewReply);
       socket.off('newTicket', handleNewTicket);
+      socket.off('ticketStatusUpdated', handleTicketStatusUpdated);
     };
-  }, [socket, addNotification]);
+  }, [socket, addNotification, user?._id, user?.role]);
 
   return null;
 }

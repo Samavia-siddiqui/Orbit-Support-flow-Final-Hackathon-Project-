@@ -28,26 +28,38 @@ export default function TicketDetails() {
     fetchTicketDetails();
   }, [id]);
 
-  // Real-time socket event listener for incoming replies
+  // Real-time socket event listener for incoming replies & status changes
   useEffect(() => {
     if (!socket || !id) return;
 
     const handleNewReplyEvent = (data) => {
       // Check if the reply belongs to the current ticket and data is valid
-      if (data && data.reply && data.ticketId === id) {
+      if (data && data.reply && data.ticketId?.toString() === id?.toString()) {
         setReplies((prev) => {
           // Double check to prevent duplicate messages
-          const exists = prev.some((r) => r && r._id === data.reply._id);
+          const exists = prev.some((r) => r && r._id?.toString() === data.reply._id?.toString());
           if (exists) return prev;
           return [...prev, data.reply];
         });
       }
     };
 
+    const handleStatusUpdatedEvent = (data) => {
+      if (data && data.ticketId?.toString() === id?.toString()) {
+        setTicket((prev) => (prev ? { 
+          ...prev, 
+          status: data.status, 
+          assignedTo: data.assignedTo || prev.assignedTo 
+        } : prev));
+      }
+    };
+
     socket.on('newReply', handleNewReplyEvent);
+    socket.on('ticketStatusUpdated', handleStatusUpdatedEvent);
 
     return () => {
       socket.off('newReply', handleNewReplyEvent);
+      socket.off('ticketStatusUpdated', handleStatusUpdatedEvent);
     };
   }, [socket, id]);
 
