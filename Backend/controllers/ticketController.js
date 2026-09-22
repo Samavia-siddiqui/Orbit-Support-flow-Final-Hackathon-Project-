@@ -42,6 +42,7 @@ export const createTicket = async (req, res) => {
       console.log(`[Socket] Broadcasting newTicket event for ticket ${ticket._id}`);
       io.to('agents').emit('newTicket', payload);
       io.to('admin').emit('newTicket', payload);
+      io.emit('newTicket', payload);
     }
 
     res.status(201).json(ticket);
@@ -141,29 +142,34 @@ export const addReply = async (req, res) => {
     const io = req.app.get('io');
     if (io) {
       const addedReply = updatedTicket.replies[updatedTicket.replies.length - 1];
+      const creatorId = (updatedTicket.createdBy?._id || updatedTicket.createdBy).toString();
+      const assignedId = updatedTicket.assignedTo ? (updatedTicket.assignedTo._id || updatedTicket.assignedTo).toString() : null;
+
       const payload = {
         ticketId: updatedTicket._id.toString(),
         ticketTitle: updatedTicket.title,
+        creatorId: creatorId,
+        assignedToId: assignedId,
         reply: addedReply,
         ticket: updatedTicket,
       };
 
-      const creatorId = (updatedTicket.createdBy?._id || updatedTicket.createdBy).toString();
-
       if (isAgent) {
-        // Agent/Admin replied -> notify customer (createdBy) in their private room
+        // Agent/Admin replied -> notify customer in their private room
         console.log(`[Socket] Agent replied, emitting newReply to user room ${creatorId}`);
         io.to(creatorId).emit('newReply', payload);
       } else {
         // Customer replied -> notify assigned agent or broadcast to all agents
-        if (updatedTicket.assignedTo) {
-          const assignedId = (updatedTicket.assignedTo._id || updatedTicket.assignedTo).toString();
+        if (assignedId) {
           io.to(assignedId).emit('newReply', payload);
         }
         console.log(`[Socket] User replied, emitting newReply to agents broadcast rooms`);
         io.to('agents').emit('newReply', payload);
         io.to('admin').emit('newReply', payload);
       }
+
+      // Also broadcast globally so no active listener drops the event
+      io.emit('newReply', payload);
     }
 
     res.status(201).json({
@@ -206,18 +212,20 @@ export const updateTicketStatus = async (req, res) => {
     // Socket.io notification for status change
     const io = req.app.get('io');
     if (io) {
+      const creatorId = (updatedTicket.createdBy?._id || updatedTicket.createdBy).toString();
       const statusPayload = {
         ticketId: updatedTicket._id.toString(),
         ticketTitle: updatedTicket.title,
+        creatorId: creatorId,
         status: updatedTicket.status,
         assignedTo: updatedTicket.assignedTo,
         ticket: updatedTicket,
       };
 
-      const creatorId = (updatedTicket.createdBy?._id || updatedTicket.createdBy).toString();
       io.to(creatorId).emit('ticketStatusUpdated', statusPayload);
       io.to('agents').emit('ticketStatusUpdated', statusPayload);
       io.to('admin').emit('ticketStatusUpdated', statusPayload);
+      io.emit('ticketStatusUpdated', statusPayload);
     }
 
     res.status(200).json(updatedTicket);

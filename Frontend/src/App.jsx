@@ -31,6 +31,13 @@ function SocketListener() {
         return;
       }
 
+      // Only notify if current user is the ticket creator OR an agent/admin
+      const isCreator = currentUserId && data.creatorId && currentUserId === data.creatorId.toString();
+      const isAgent = user?.role === 'agent' || user?.role === 'admin';
+      if (!isCreator && !isAgent) {
+        return;
+      }
+
       if (!onCurrentTicketPage) {
         addNotification({
           replyId: data.reply._id || `${data.ticketId}-${Date.now()}`,
