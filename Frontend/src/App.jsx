@@ -29,12 +29,12 @@ function SocketListener() {
         return;
       }
 
-      // If creatorId is known and current user is a customer, only notify the creator
-      const creatorId = (data.creatorId || data.ticket?.createdBy?._id || data.ticket?.createdBy || data.createdBy?._id || data.createdBy)?.toString();
       const isAgent = user?.role === 'agent' || user?.role === 'admin';
+      const creatorId = (data.creatorId || data.ticket?.createdBy?._id || data.ticket?.createdBy || data.createdBy?._id || data.createdBy)?.toString();
       const isCreator = currentUserId && creatorId && currentUserId === creatorId;
       
-      if (!isAgent && !isCreator && creatorId) {
+      // If current user is a customer, only notify them if they are the ticket creator
+      if (!isAgent && !isCreator) {
         return;
       }
 
@@ -54,7 +54,12 @@ function SocketListener() {
       if (!data || !data.ticketId) return;
 
       const role = user?.role?.toLowerCase();
+      // Only agents and admins get notified of new incoming tickets
       if (role === 'agent' || role === 'admin') {
+        const creatorId = (data.createdBy?._id || data.createdBy)?.toString();
+        const currentUserId = (user?._id || user?.id)?.toString();
+        if (creatorId && currentUserId && creatorId === currentUserId) return;
+
         console.log('[SocketListener] Adding new ticket notification to bell:', data.ticketTitle);
         addNotification({
           replyId: `new-ticket-${data.ticketId}-${Date.now()}`,
@@ -71,8 +76,14 @@ function SocketListener() {
     const handleTicketStatusUpdated = (data) => {
       if (!data || !data.ticketId) return;
 
-      // Notify customer when status updated
+      const currentUserId = (user?._id || user?.id)?.toString();
+      const creatorId = (data.creatorId || data.ticket?.createdBy?._id || data.ticket?.createdBy || data.createdBy?._id || data.createdBy)?.toString();
+      const isCreator = currentUserId && creatorId && currentUserId === creatorId;
+
+      // Status updates only go to the customer who created that specific ticket
       if (user?.role !== 'agent' && user?.role !== 'admin') {
+        if (!isCreator) return;
+
         console.log('[SocketListener] Adding status update notification to bell:', data.status);
         addNotification({
           replyId: `status-${data.ticketId}-${Date.now()}`,
