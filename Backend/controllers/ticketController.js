@@ -233,3 +233,43 @@ export const updateTicketStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Delete ticket (Agent Only)
+export const deleteTicket = async (req, res) => {
+  try {
+    const isAgent = req.user.role === 'agent' || req.user.role === 'admin';
+    if (!isAgent) {
+      return res.status(403).json({ message: 'Not authorized to delete tickets' });
+    }
+
+    const ticket = await Ticket.findById(req.params.id);
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    const creatorId = (ticket.createdBy?._id || ticket.createdBy)?.toString();
+    const ticketId = ticket._id.toString();
+
+    await Ticket.findByIdAndDelete(req.params.id);
+
+    // Socket.io notification for deletion
+    const io = req.app.get('io');
+    if (io) {
+      const deletePayload = {
+        ticketId: ticketId,
+        creatorId: creatorId,
+      };
+
+      if (creatorId) {
+        io.to(creatorId).emit('ticketDeleted', deletePayload);
+      }
+      io.to('agents').emit('ticketDeleted', deletePayload);
+      io.to('admin').emit('ticketDeleted', deletePayload);
+      io.emit('ticketDeleted', deletePayload);
+    }
+
+    res.status(200).json({ message: 'Ticket deleted successfully', ticketId });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

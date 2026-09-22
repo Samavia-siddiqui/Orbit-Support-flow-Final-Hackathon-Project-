@@ -5,11 +5,12 @@ import Header from '../components/Header';
 import BackgroundBlobs from '../components/BackgroundBlobs';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { ArrowLeft, Send, Clock, Loader2, AlertTriangle, User, Paperclip } from 'lucide-react';
+import { ArrowLeft, Send, Clock, Loader2, AlertTriangle, User, Paperclip, Trash2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function TicketDetails() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, clearNotification } = useAuth();
   const socket = useSocket();
   const navigate = useNavigate();
 
@@ -21,6 +22,7 @@ export default function TicketDetails() {
   const [newReply, setNewReply] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
+  const [deletingTicket, setDeletingTicket] = useState(false);
 
   const chatEndRef = useRef(null);
 
@@ -28,7 +30,7 @@ export default function TicketDetails() {
     fetchTicketDetails();
   }, [id]);
 
-  // Real-time socket event listener for incoming replies & status changes
+  // Real-time socket event listener for incoming replies, status changes & deletion
   useEffect(() => {
     if (!socket || !id) return;
 
@@ -54,14 +56,29 @@ export default function TicketDetails() {
       }
     };
 
+    const handleTicketDeletedEvent = (data) => {
+      if (data && data.ticketId?.toString() === id?.toString()) {
+        Swal.fire({
+          title: 'Ticket Deleted',
+          text: 'This ticket has been removed by support.',
+          icon: 'info',
+          confirmButtonColor: '#0c5256'
+        }).then(() => {
+          navigate(user?.role === 'agent' ? '/agent/dashboard' : '/dashboard');
+        });
+      }
+    };
+
     socket.on('newReply', handleNewReplyEvent);
     socket.on('ticketStatusUpdated', handleStatusUpdatedEvent);
+    socket.on('ticketDeleted', handleTicketDeletedEvent);
 
     return () => {
       socket.off('newReply', handleNewReplyEvent);
       socket.off('ticketStatusUpdated', handleStatusUpdatedEvent);
+      socket.off('ticketDeleted', handleTicketDeletedEvent);
     };
-  }, [socket, id]);
+  }, [socket, id, navigate, user?.role]);
 
   // Auto-scroll to bottom of replies when replies state changes
   useEffect(() => {
@@ -125,6 +142,47 @@ export default function TicketDetails() {
     } finally {
       setChangingStatus(false);
     }
+  };
+
+  const handleDeleteTicket = () => {
+    Swal.fire({
+      title: 'Delete Ticket?',
+      text: `Are you sure you want to delete "${ticket?.title}"? This cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#0c5256',
+      confirmButtonText: 'Yes, delete it',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          setDeletingTicket(true);
+          await api.delete(`/tickets/${id}`);
+          if (clearNotification) {
+            clearNotification(id);
+          }
+          Swal.fire({
+            title: 'Deleted!',
+            text: 'The ticket has been deleted.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false,
+          }).then(() => {
+            navigate(user?.role === 'agent' ? '/agent/dashboard' : '/dashboard');
+          });
+        } catch (err) {
+          console.error('Error deleting ticket:', err);
+          Swal.fire({
+            title: 'Error',
+            text: err.response?.data?.message || 'Failed to delete ticket.',
+            icon: 'error',
+            confirmButtonColor: '#0c5256',
+          });
+        } finally {
+          setDeletingTicket(false);
+        }
+      }
+    });
   };
 
   const getStatusBadgeStyles = (status) => {
@@ -249,9 +307,23 @@ export default function TicketDetails() {
               <h1 className="font-h1 text-h2 text-on-surface font-semibold">{ticket.title}</h1>
             </div>
             
-            <div className="flex items-center gap-2 text-on-surface-variant text-sm mt-1 sm:mt-0">
-              <Clock size={16} />
-              <span>Created {getFormattedDate(ticket.createdAt)}</span>
+            <div className="flex items-center gap-3 text-on-surface-variant text-sm mt-1 sm:mt-0 flex-wrap justify-end">
+              <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                <Clock size={15} />
+                <span>Created {getFormattedDate(ticket.createdAt)}</span>
+              </div>
+
+              {(user.role === 'agent' || user.role === 'admin') && (
+                <button
+                  onClick={handleDeleteTicket}
+                  disabled={deletingTicket}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-error/10 hover:bg-error hover:text-white text-error rounded-full text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                  title="Delete Ticket"
+                >
+                  <Trash2 size={14} />
+                  <span>{deletingTicket ? 'Deleting...' : 'Delete'}</span>
+                </button>
+              )}
             </div>
           </header>
 

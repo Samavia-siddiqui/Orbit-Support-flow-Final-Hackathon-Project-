@@ -6,6 +6,7 @@ import {
   getTicketById,
   addReply,
   updateTicketStatus,
+  deleteTicket,
 } from '../controllers/ticketController.js';
 import { protect, agentOnly, userOnly } from '../middleware/authMiddleware.js';
 
@@ -18,5 +19,6 @@ router.get('/:id', protect, getTicketById);
 router.post('/:id/reply', protect, addReply);
 router.patch('/:id/status', protect, agentOnly, updateTicketStatus);
 router.put('/:id/status', protect, agentOnly, updateTicketStatus);
+router.delete('/:id', protect, agentOnly, deleteTicket);
 
 export default router;

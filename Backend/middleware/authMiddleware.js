@@ -30,7 +30,8 @@ export const protect = async (req, res, next) => {
 };
 
 export const agentOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'agent') {
+  const role = req.user?.role?.toLowerCase();
+  if (role === 'agent' || role === 'admin') {
     next();
   } else {
     res.status(403).json({ message: 'Not authorized as an agent' });
@@ -38,7 +39,8 @@ export const agentOnly = (req, res, next) => {
 };
 
 export const userOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'user') {
+  const role = req.user?.role?.toLowerCase();
+  if (role === 'user') {
     next();
   } else {
     res.status(403).json({ message: 'Not authorized as a user' });

@@ -19,7 +19,8 @@ import {
   Bell,
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 
 export default function AgentDashboard() {
@@ -74,7 +75,7 @@ export default function AgentDashboard() {
     }
   };
 
-  // Real-time socket updates for new replies, new tickets, and status changes
+  // Real-time socket updates for new replies, new tickets, status changes, and deletions
   useEffect(() => {
     if (!socket) return;
     const handleLiveTicketUpdate = () => {
@@ -82,16 +83,25 @@ export default function AgentDashboard() {
       fetchTicketsSilent();
     };
 
+    const handleTicketDeleted = (data) => {
+      if (data?.ticketId) {
+        setTickets((prev) => prev.filter((t) => t._id !== data.ticketId));
+        clearNotification(data.ticketId);
+      }
+    };
+
     socket.on('newReply', handleLiveTicketUpdate);
     socket.on('newTicket', handleLiveTicketUpdate);
     socket.on('ticketStatusUpdated', handleLiveTicketUpdate);
+    socket.on('ticketDeleted', handleTicketDeleted);
 
     return () => {
       socket.off('newReply', handleLiveTicketUpdate);
       socket.off('newTicket', handleLiveTicketUpdate);
       socket.off('ticketStatusUpdated', handleLiveTicketUpdate);
+      socket.off('ticketDeleted', handleTicketDeleted);
     };
-  }, [socket]);
+  }, [socket, clearNotification]);
 
   const handleNotificationClick = (ticketId) => {
     clearNotification(ticketId);
@@ -175,6 +185,42 @@ export default function AgentDashboard() {
       console.error('Error assigning ticket:', err);
       alert('Failed to assign ticket.');
     }
+  };
+
+  const handleDeleteTicket = (ticketId, ticketTitle, e) => {
+    e.stopPropagation();
+    Swal.fire({
+      title: 'Delete Ticket?',
+      text: `Are you sure you want to delete "${ticketTitle}"? This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#0c5256',
+      confirmButtonText: 'Yes, delete it',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await api.delete(`/tickets/${ticketId}`);
+          setTickets((prev) => prev.filter((t) => t._id !== ticketId));
+          clearNotification(ticketId);
+          Swal.fire({
+            title: 'Deleted!',
+            text: 'The ticket has been deleted.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false,
+          });
+        } catch (err) {
+          console.error('Error deleting ticket:', err);
+          Swal.fire({
+            title: 'Error',
+            text: err.response?.data?.message || 'Failed to delete ticket.',
+            icon: 'error',
+            confirmButtonColor: '#0c5256',
+          });
+        }
+      }
+    });
   };
 
   const handleLogout = () => {
@@ -732,6 +778,14 @@ export default function AgentDashboard() {
                               {ticket.assignedTo.name === user.name ? 'Assigned to Me' : `Assigned: ${ticket.assignedTo.name}`}
                             </span>
                           )}
+                          <button
+                            onClick={(e) => handleDeleteTicket(ticket._id, ticket.title, e)}
+                            className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-full transition-colors cursor-pointer"
+                            title="Delete Ticket"
+                            aria-label="Delete Ticket"
+                          >
+                            <Trash2 size={15} />
+                          </button>
                           <ChevronRight size={16} className="text-outline-variant" />
                         </div>
                       </div>
@@ -786,19 +840,29 @@ export default function AgentDashboard() {
                             </span>
                           </td>
                           <td className="py-4 px-6 text-right">
-                            {!ticket.assignedTo && (
+                            <div className="flex items-center justify-end gap-2">
+                              {!ticket.assignedTo && (
+                                <button
+                                  onClick={(e) => handleAssignToMe(ticket._id, e)}
+                                  className="py-1 px-3 bg-primary/10 text-primary rounded-full text-xs font-bold hover:bg-primary hover:text-on-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                                >
+                                  Assign to me
+                                </button>
+                              )}
+                              {ticket.assignedTo && (
+                                <span className="text-xs text-on-surface-variant opacity-80 font-medium">
+                                  Assigned to {ticket.assignedTo.name === user.name ? 'Me' : ticket.assignedTo.name}
+                                </span>
+                              )}
                               <button
-                                onClick={(e) => handleAssignToMe(ticket._id, e)}
-                                className="py-1 px-3 bg-primary/10 text-primary rounded-full text-xs font-bold hover:bg-primary hover:text-on-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                                onClick={(e) => handleDeleteTicket(ticket._id, ticket.title, e)}
+                                className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-full transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                                title="Delete Ticket"
+                                aria-label="Delete Ticket"
                               >
-                                Assign to me
+                                <Trash2 size={16} />
                               </button>
-                            )}
-                            {ticket.assignedTo && (
-                              <span className="text-xs text-on-surface-variant opacity-80 font-medium">
-                                Assigned to {ticket.assignedTo.name === user.name ? 'Me' : ticket.assignedTo.name}
-                              </span>
-                            )}
+                            </div>
                           </td>
                         </tr>
                       ))}
