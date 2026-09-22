@@ -7,8 +7,10 @@ export const SocketProvider = ({ children, user }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
+    const userId = user?._id || user?.id;
+
     // If there is no authenticated user, disconnect the socket if it exists
-    if (!user || !user._id) {
+    if (!user || !userId) {
       if (socket) {
         socket.disconnect();
         setSocket(null);
@@ -19,6 +21,8 @@ export const SocketProvider = ({ children, user }) => {
     // Get the socket server base URL by stripping the /api suffix from VITE_API_URL
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     const socketUrl = apiUrl.replace(/\/api$/, '');
+
+    console.log('[SocketProvider] Initializing socket connection to:', socketUrl, 'for user:', userId);
 
     // Connect to the socket server
     const socketInstance = io(socketUrl, {
@@ -31,11 +35,14 @@ export const SocketProvider = ({ children, user }) => {
     });
 
     const joinRoom = () => {
-      console.log('[Socket] Connected, emitting join room:', { userId: user._id, role: user.role });
-      socketInstance.emit('join', { userId: user._id, role: user.role });
+      console.log('[Socket] Connected, emitting join room:', { userId: userId, role: user.role });
+      socketInstance.emit('join', { userId: userId, role: user.role });
     };
 
     socketInstance.on('connect', joinRoom);
+    socketInstance.on('connect_error', (err) => {
+      console.error('[Socket] Connection error:', err.message);
+    });
 
     // If socket is already connected immediately
     if (socketInstance.connected) {
@@ -49,7 +56,7 @@ export const SocketProvider = ({ children, user }) => {
       socketInstance.off('connect', joinRoom);
       socketInstance.disconnect();
     };
-  }, [user?._id, user?.role]);
+  }, [user?._id, user?.id, user?.role]);
 
   return (
     <SocketContext.Provider value={socket}>

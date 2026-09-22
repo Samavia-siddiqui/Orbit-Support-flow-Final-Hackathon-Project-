@@ -26,7 +26,7 @@ function SocketListener() {
       
       // Do not notify self about own sent message
       const senderId = (data.reply.sentBy?._id || data.reply.sentBy)?.toString();
-      const currentUserId = user?._id?.toString();
+      const currentUserId = (user?._id || user?.id)?.toString();
       if (senderId && currentUserId && senderId === currentUserId) {
         return;
       }
@@ -97,7 +97,7 @@ function SocketListener() {
       socket.off('newTicket', handleNewTicket);
       socket.off('ticketStatusUpdated', handleTicketStatusUpdated);
     };
-  }, [socket, addNotification, user?._id, user?.role]);
+  }, [socket, addNotification, user?._id, user?.id, user?.role]);
 
   return null;
 }
