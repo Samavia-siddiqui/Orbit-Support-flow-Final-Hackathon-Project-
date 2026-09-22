@@ -21,8 +21,6 @@ function SocketListener() {
 
     const handleNewReply = (data) => {
       if (!data || !data.reply) return;
-      const currentPath = window.location.pathname;
-      const onCurrentTicketPage = currentPath === `/tickets/${data.ticketId}`;
       
       // Do not notify self about own sent message
       const senderId = (data.reply.sentBy?._id || data.reply.sentBy)?.toString();
@@ -31,36 +29,37 @@ function SocketListener() {
         return;
       }
 
-      // Only notify if current user is the ticket creator OR an agent/admin
-      const isCreator = currentUserId && data.creatorId && currentUserId === data.creatorId.toString();
+      // If creatorId is known and current user is a customer, only notify the creator
+      const creatorId = (data.creatorId || data.ticket?.createdBy?._id || data.ticket?.createdBy || data.createdBy?._id || data.createdBy)?.toString();
       const isAgent = user?.role === 'agent' || user?.role === 'admin';
-      if (!isCreator && !isAgent) {
+      const isCreator = currentUserId && creatorId && currentUserId === creatorId;
+      
+      if (!isAgent && !isCreator && creatorId) {
         return;
       }
 
-      if (!onCurrentTicketPage) {
-        addNotification({
-          replyId: data.reply._id || `${data.ticketId}-${Date.now()}`,
-          ticketId: data.ticketId,
-          ticketTitle: data.ticketTitle || 'Support Ticket',
-          message: data.reply.message,
-          sentBy: data.reply.sentBy,
-          createdAt: data.reply.createdAt || new Date().toISOString(),
-          type: 'reply',
-        });
-      }
+      console.log('[SocketListener] Adding reply notification to bell:', data.ticketTitle);
+      addNotification({
+        replyId: data.reply._id || `${data.ticketId}-${Date.now()}-${Math.random()}`,
+        ticketId: data.ticketId,
+        ticketTitle: data.ticketTitle || 'Support Ticket',
+        message: data.reply.message,
+        sentBy: data.reply.sentBy,
+        createdAt: data.reply.createdAt || new Date().toISOString(),
+        type: 'reply',
+      });
     };
 
     const handleNewTicket = (data) => {
       if (!data || !data.ticketId) return;
 
-      // Only notify if current user is agent/admin
       const role = user?.role?.toLowerCase();
       if (role === 'agent' || role === 'admin') {
+        console.log('[SocketListener] Adding new ticket notification to bell:', data.ticketTitle);
         addNotification({
-          replyId: `new-ticket-${data.ticketId}`,
+          replyId: `new-ticket-${data.ticketId}-${Date.now()}`,
           ticketId: data.ticketId,
-          ticketTitle: data.ticketTitle,
+          ticketTitle: data.ticketTitle || 'New Ticket',
           message: `New support request: "${data.ticketTitle}" (${data.category || 'General'})`,
           sentBy: data.createdBy,
           createdAt: data.createdAt || new Date().toISOString(),
@@ -71,17 +70,16 @@ function SocketListener() {
 
     const handleTicketStatusUpdated = (data) => {
       if (!data || !data.ticketId) return;
-      const currentPath = window.location.pathname;
-      const onCurrentTicketPage = currentPath === `/tickets/${data.ticketId}`;
 
-      // Notify customer if status changed and not on that ticket page
-      if (user?.role !== 'agent' && !onCurrentTicketPage) {
+      // Notify customer when status updated
+      if (user?.role !== 'agent' && user?.role !== 'admin') {
+        console.log('[SocketListener] Adding status update notification to bell:', data.status);
         addNotification({
           replyId: `status-${data.ticketId}-${Date.now()}`,
           ticketId: data.ticketId,
-          ticketTitle: data.ticketTitle,
-          message: `Status updated to "${data.status}"`,
-          sentBy: { name: 'Support System' },
+          ticketTitle: data.ticketTitle || 'Support Ticket',
+          message: `Ticket status updated to "${data.status}"`,
+          sentBy: { name: 'Support Desk' },
           createdAt: new Date().toISOString(),
           type: 'status_update',
         });

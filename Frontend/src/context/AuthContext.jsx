@@ -63,11 +63,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const addNotification = (notif) => {
+    if (!notif) return;
+    const replyId = notif.replyId || `${notif.ticketId || 'notif'}-${Date.now()}-${Math.random()}`;
+    const safeNotif = { ...notif, replyId };
     setNotifications((prev) => {
-      // Prevent duplicates in notifications array
-      const exists = prev.some((n) => n.replyId === notif.replyId);
-      if (exists) return prev;
-      return [notif, ...prev];
+      if (prev.some((n) => n.replyId === safeNotif.replyId)) return prev;
+      return [safeNotif, ...prev];
     });
   };
 
