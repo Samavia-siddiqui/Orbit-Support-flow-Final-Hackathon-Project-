@@ -18,15 +18,20 @@ export const SocketProvider = ({ children, user }) => {
       return;
     }
 
-    // Get the socket server base URL by stripping the /api suffix from VITE_API_URL
+    // Get the socket server base URL cleanly from VITE_API_URL
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-    const socketUrl = apiUrl.replace(/\/api$/, '');
+    let socketUrl = 'http://localhost:5000';
+    try {
+      socketUrl = new URL(apiUrl).origin;
+    } catch {
+      socketUrl = apiUrl.replace(/\/api\/?$/, '');
+    }
 
     console.log('[SocketProvider] Initializing socket connection to:', socketUrl, 'for user:', userId);
 
     // Connect to the socket server
     const socketInstance = io(socketUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       withCredentials: true,
       autoConnect: true,
       reconnection: true,
